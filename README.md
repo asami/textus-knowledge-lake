@@ -43,7 +43,8 @@ TKL is therefore not intended to reproduce NotebookLM or to ingest every raw fil
 
 - **Google Workspace / Knowledge Lake** — stores source and working materials and supports primary knowledge processing.
 - **NotebookLM / Workspace AI / humans** — read, compare, summarize, investigate, discuss, and prepare Knowledge Candidates.
-- **TEAI** — transports events/data, integration bindings, authentication, delivery/retry, Job/Workflow initiation and continuation.
+- **OpenClaw** — performs physical/tool-mediated access to Google Workspace and other external SaaS environments where agent-mediated integration is appropriate.
+- **TEAI** — owns the enterprise integration boundary: endpoints, events/data transport, integration bindings, authentication/policy boundary, delivery/retry, Job/Workflow initiation, correlation and continuation.
 - **TKL** — validates and interprets Knowledge Candidates, normalizes provenance, resolves identity, maps them to Textus concepts, and ingests them into the Textus World.
 - **KnowledgeHub** — represents, links, processes and retrieves Textus knowledge.
 - **BoK** — publishes curated knowledge products.
@@ -120,6 +121,7 @@ Phase 1 validates:
 Google Workspace
    -> NotebookLM / human primary processing
    -> Knowledge Candidate
+   -> OpenClaw (physical/tool-mediated access)
    -> TEAI
    -> TKL
    -> KnowledgeHub / Textus World
@@ -127,3 +129,29 @@ Google Workspace
 ```
 
 The primary architectural question is no longer how TKL processes raw Drive files. It is how a traceable, context-rich Knowledge Candidate crosses the Knowledge Lake/Textus boundary correctly.
+
+## Physical integration boundary
+
+TKL must not contain Google Workspace API, OAuth, Drive/Docs access, NotebookLM retrieval, or other provider-specific physical integration logic.
+
+For the Google Workspace reference architecture:
+
+```text
+Google Workspace / NotebookLM
+          |
+     physical access
+          v
+       OpenClaw
+          |
+          v
+         TEAI
+  enterprise integration
+          |
+          v
+         TKL
+  semantic ingestion
+```
+
+More precisely, **physical integration is a TEAI responsibility**, and TEAI delegates agent/tool-mediated SaaS access to OpenClaw. Direct deterministic integrations may bypass OpenClaw and use a TEAI endpoint directly.
+
+TKL should see provider-neutral application input such as `KnowledgeCandidateReceived(candidate, sources, provenance, context)`; it should not need to know which Google API, OAuth flow, tool, or agent obtained that data.
