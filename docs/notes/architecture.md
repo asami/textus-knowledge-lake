@@ -2,124 +2,174 @@
 
 ## Purpose
 
-TKL provides the application semantics for turning heterogeneous project material into curated knowledge. It deliberately separates **where working material lives** from **how knowledge is represented and published**.
+TKL is the gateway between an external **Knowledge Lake** and the **Textus World**.
 
-Google Workspace is initially used as the physical/operational Knowledge Lake. TKL supplies the logical acquisition and curation layer above it.
+The Knowledge Lake performs source management and primary knowledge processing. TKL receives the resulting Knowledge Candidates and performs semantic ingestion into Textus.
 
-## Responsibility boundaries
+## Reference environment
 
-### Source / Knowledge Lake provider
+The initial reference environment is:
 
-Stores working material and remains useful independently of TKL. The initial provider is Google Workspace.
+```text
+Google Workspace
+  +-- source/working materials
+  +-- NotebookLM
+  +-- Workspace AI
+  +-- human knowledge work
+          |
+          v
+   KnowledgeCandidate
+          |
+         TEAI
+          |
+         TKL
+          |
+     Textus World
+```
 
-Examples include documents, spreadsheets, PDFs, images, notes, mail-derived material and intermediate artifacts.
+Google Workspace is not merely raw storage. It is an operational Knowledge Lake with its own interactive knowledge-processing capabilities.
+
+## Boundary
+
+### Knowledge Lake side
+
+Responsible for:
+
+- storing original and working material;
+- organizing source sets for human work;
+- reading and comparing sources;
+- exploratory Q&A;
+- summarization and analysis;
+- extracting initial issues/concepts/claims;
+- human notes and interpretation;
+- producing a candidate suitable for Textus ingestion.
+
+NotebookLM is a reference **interactive primary knowledge processor** in this layer.
 
 ### TEAI
 
-Provides enterprise integration infrastructure:
+Responsible for the integration boundary:
 
-- source connectivity and endpoint adaptation;
-- source events and normalization;
-- Integration Binding and trigger policy;
-- CNCF Job/Workflow initiation;
-- delivery/retry/idempotency where required;
-- OpenClaw/agent delegation through Continuation Protocol;
+- detecting/transporting candidate publication events;
+- provider authentication and external access;
+- mapping transport DTOs;
+- delivery/retry/idempotency;
+- starting CNCF Job/Workflow;
+- external AI/agent continuation when needed;
 - integration audit/provenance.
-
-TKL should not reproduce this infrastructure.
 
 ### TKL
 
-Owns knowledge-lake application semantics:
+Responsible for semantic ingestion:
 
-- Source and Collection concepts;
-- Material/Asset identity;
-- acquisition state;
-- classification and enrichment state;
-- provenance from source material;
-- curation decisions;
-- relationship to KnowledgeHub objects;
-- publication policy and status;
-- human review where required.
+- validate KnowledgeCandidate;
+- normalize source/provenance/context;
+- resolve identity;
+- map concepts/facets/ontology;
+- map candidate content to Textus Information/Knowledge;
+- link to existing Textus knowledge;
+- apply ingestion/curation policy;
+- ingest accepted results;
+- retain traceability to external source and derived artifacts.
+
+TKL should not duplicate NotebookLM-style primary processing.
 
 ### KnowledgeHub
 
-Owns knowledge representation and processing after material has crossed the curation boundary: semantic representation, linking, retrieval, inference/knowledge processing and knowledge services.
+Responsible for knowledge representation, linking, processing, retrieval and services after ingestion.
 
 ### BoK
 
-Represents curated knowledge products. BoK is not a raw mirror of the Knowledge Lake.
+Responsible for curated knowledge publication. A Knowledge Candidate does not automatically become a BoK item.
 
-## Candidate domain concepts
+## Core model direction
 
-Initial concepts to refine during implementation:
-
-- `KnowledgeSource`
-- `Collection`
-- `Material`
-- `AssetReference`
-- `Acquisition`
-- `Classification`
-- `Enrichment`
-- `Curation`
-- `Publication`
-- `Provenance`
-
-These are conceptual names, not yet implementation classes.
-
-## Lifecycle
+### KnowledgeCandidate
 
 ```text
-Raw -> Captured -> Classified -> Enriched -> Curated -> Published
+KnowledgeCandidate
+  +-- Content
+  +-- Claim*
+  +-- Concept*
+  +-- SourceReference*
+  +-- Citation*
+  +-- Context
+  +-- Provenance
+  +-- ProcessingHistory
+  +-- HumanNote*
 ```
 
-The lifecycle should allow rejection, deferral, reclassification and re-curation. Publication is a decision, not an automatic consequence of acquisition.
+This is conceptual and not yet a fixed implementation schema.
 
-## Workflow model
+### ExternalMaterialReference
 
-A typical workflow is:
-
-1. receive source event through TEAI;
-2. acquire or reference the material;
-3. establish identity/checksum/source metadata;
-4. detect duplicate or existing material;
-5. classify;
-6. enrich metadata/concepts/relationships;
-7. review/curate;
-8. publish selected knowledge into KnowledgeHub/BoK;
-9. retain provenance linking the publication back to source material.
-
-Deterministic steps should use CNCF Operations. Non-deterministic classification or knowledge work may use JudgmentAction or delegation through Continuation Protocol.
-
-## AI and OpenClaw
-
-TKL should describe AI work in knowledge-domain terms, not provider/tool terms.
-
-For example:
+Original source artifacts can remain in the external lake.
 
 ```text
-Goal: ClassifyMaterial(materialRef, classificationContext)
+ExternalMaterialReference
+  +-- provider
+  +-- resourceId
+  +-- version
+  +-- checksum
+  +-- capturedAt
 ```
 
-rather than encoding a sequence of LLM/tool calls.
+The reference must be sufficient to preserve identity and provenance and, where policy permits, retrieve the material through TEAI.
 
-TEAI can delegate the goal to OpenClaw. OpenClaw can choose the AI/tool interaction necessary to produce a result. TKL receives a normalized result and continues the workflow.
+### Derived material provenance
 
-This keeps the TKL model stable when AI providers and external tools change.
+A NotebookLM or human-produced candidate is derived material. Its provenance should preserve:
 
-## Google Workspace
+- source materials;
+- processor/agent;
+- processing time;
+- relevant instruction/context where available;
+- human review/annotation;
+- citations/source grounding.
 
-Google Workspace is the initial provider because it can act as the project's operational data/knowledge lake while retaining familiar collaboration workflows.
+This supports the wider Textus principle that meaning is contextual: who attached meaning, when, and for what purpose matters.
 
-The first implementation should focus on a narrow provider slice rather than attempting to cover all Workspace services. Google Drive-based material acquisition is the natural first reference path; Gmail-derived or other Workspace material can be added through TEAI as later scenarios.
+## Lifecycle boundary
+
+The previous TKL lifecycle beginning with `Raw -> Captured` is superseded.
+
+Raw/captured/working-material lifecycle belongs to the external Knowledge Lake.
+
+TKL begins approximately here:
+
+```text
+Knowledge Lake
+  Raw -> Working -> Primary Processing
+                         |
+                         v
+                 KnowledgeCandidate
+                         |
+                    TKL boundary
+                         |
+          Validate -> Interpret -> Map
+                         |
+                    Ingest/Reject
+                         |
+                    Textus World
+```
+
+## AI processing layers
+
+The architecture can use different AI layers without collapsing them into one agent:
+
+1. **Knowledge Lake AI** — NotebookLM/Workspace AI: understand source sets and produce candidate knowledge.
+2. **Integration AI** — OpenClaw through TEAI: achieve external goals and interact with tools/services/humans.
+3. **Knowledge AI** — KnowledgeHub: operate on formal Textus knowledge and relationships.
+
+TKL coordinates the transition into layer 3; it does not replace layers 1 or 2.
 
 ## Design principles
 
-1. Lake material is not automatically knowledge.
-2. Publication into KnowledgeHub/BoK is an explicit curation boundary.
-3. Source and provenance must remain traceable.
-4. Provider-specific APIs belong below the TKL application model.
-5. External integration infrastructure belongs to TEAI.
-6. Runtime execution semantics belong to CNCF.
-7. AI work should be expressed as goals/capabilities and delegated where useful.
-8. Stable AI-assisted procedures should be formalized progressively.
+1. TKL starts from Knowledge Candidates, not arbitrary raw lake content.
+2. Primary exploratory knowledge processing belongs in the Knowledge Lake.
+3. Original materials may remain external and be referenced rather than copied.
+4. Provenance must connect Textus knowledge through the candidate to original sources.
+5. Provider-specific integration belongs to TEAI.
+6. NotebookLM is a reference processor, not a TKL dependency.
+7. The KnowledgeCandidate contract should be provider-neutral.
+8. Ingestion into Textus is an explicit semantic boundary.
