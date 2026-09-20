@@ -1,129 +1,129 @@
 # Textus Knowledge Lake (TKL)
 
-Textus Knowledge Lake is the acquisition and curation application for the Textus knowledge architecture.
+Textus Knowledge Lake is the **Knowledge Ingestion Application** that brings knowledge candidates, primarily prepared in an external Knowledge Lake, into the Textus World.
 
-Its initial deployment model uses Google Workspace as a **Knowledge Lake**: project materials such as documents, spreadsheets, mail-derived artifacts, images, PDFs, notes, and intermediate work can remain in the workspace while TKL discovers, organizes, enriches, curates, and publishes selected material into KnowledgeHub and Body of Knowledge (BoK) products.
+The initial Knowledge Lake is Google Workspace. Raw and working materials remain there, and NotebookLM, Workspace AI, and humans perform primary knowledge processing. TKL begins at the boundary where those results become **Knowledge Candidates** for Textus.
 
-Google Workspace is the first provider, not the TKL architecture itself.
+## Core definition
 
-## Position in the Textus architecture
+> TKL imports knowledge candidates that have received primary processing in a Knowledge Lake into the Textus World.
 
-```text
-Google Workspace / Slack / GitHub / Files / ...
-                    |
-                    v
-                   TEAI
-      integration / events / continuation
-                    |
-                    v
-          textus-knowledge-lake
-        acquisition / curation
-                    |
-                    v
-              KnowledgeHub
-     representation / processing / retrieval
-                    |
-                    v
-                   BoK
-            curated publication
-```
-
-A useful responsibility summary is:
-
-- **Workspace / source systems** — Knowledge Lake storage and working materials.
-- **TEAI** — connectivity, enterprise events, integration bindings, Job/Workflow initiation, delivery/retry and AI/agent continuation.
-- **TKL** — knowledge acquisition, classification, enrichment, curation and publication decisions.
-- **KnowledgeHub** — knowledge representation, processing, linking, retrieval and knowledge services.
-- **BoK** — curated knowledge products for human and machine use.
-
-## Knowledge lifecycle
-
-TKL treats lake content as material that may progressively become managed knowledge.
+TKL is therefore not intended to reproduce NotebookLM or to ingest every raw file merely because it exists in Google Workspace.
 
 ```text
-Raw
-  -> Captured
-  -> Classified
-  -> Enriched
-  -> Curated
-  -> Published
+              Google Workspace
+               Knowledge Lake
+                     |
+        +------------+-------------+
+        |                          |
+   Raw Materials              NotebookLM /
+ PDF / Sheets / Docs          Workspace AI /
+ Mail / Images / ...          Human analysis
+        |                          |
+        +---- source/provenance ---+
+                                   |
+                           Knowledge Candidate
+                                   |
+                                  TEAI
+                                   |
+                                   v
+                     textus-knowledge-lake
+                       Knowledge Ingestion
+                                   |
+                            Textus World
+                           /            \
+                    Information       Knowledge
+                           \            /
+                            KnowledgeHub
+                                 |
+                                BoK
 ```
 
-Not everything in the lake must become KnowledgeHub knowledge or a BoK publication.
+## Responsibility boundaries
 
-TKL should preserve source identity, provenance, curation state and publication decisions throughout this lifecycle.
+- **Google Workspace / Knowledge Lake** — stores source and working materials and supports primary knowledge processing.
+- **NotebookLM / Workspace AI / humans** — read, compare, summarize, investigate, discuss, and prepare Knowledge Candidates.
+- **TEAI** — transports events/data, integration bindings, authentication, delivery/retry, Job/Workflow initiation and continuation.
+- **TKL** — validates and interprets Knowledge Candidates, normalizes provenance, resolves identity, maps them to Textus concepts, and ingests them into the Textus World.
+- **KnowledgeHub** — represents, links, processes and retrieves Textus knowledge.
+- **BoK** — publishes curated knowledge products.
 
-## TEAI integration
+## Knowledge Candidate
 
-TKL does not implement a general-purpose external integration layer. It uses **textus-enterprise-application-integration (TEAI)** for integration infrastructure.
+The central input concept of TKL is `KnowledgeCandidate`, not raw `Material`.
 
-Example:
+A candidate may contain or reference:
+
+- content/summary;
+- claims;
+- concepts/entities;
+- source references and citations;
+- context;
+- provenance;
+- processing history;
+- human notes/review;
+- generation/processing agent information.
+
+The exact DTO/model will be refined with TEAI and KnowledgeHub.
+
+## Source material
+
+Original materials do not necessarily need to be copied into Textus.
+
+TKL can retain provider-neutral external references such as:
 
 ```text
-Google Drive
-  -> FileCreated
-  -> TEAI event/binding
-  -> CNCF Job
-  -> TKL Workflow
-       -> acquire
-       -> identify
-       -> extract metadata
-       -> classify
-       -> enrich/relate
-       -> curate
-       -> publish
-  -> KnowledgeHub / BoK
+ExternalMaterialReference
+  provider
+  resourceId
+  version
+  checksum
+  capturedAt
 ```
 
-TEAI may use direct deterministic endpoints or delegate agent-mediated external interaction through OpenClaw and the CNCF Continuation Protocol.
+Knowledge imported into Textus must remain traceable to its source material and processing provenance.
 
-## AI-assisted curation
+## Ingestion flow
 
-AI is useful for non-deterministic knowledge work such as:
+```text
+KnowledgeCandidate
+       |
+       v
+      TEAI
+       |
+       v
+      TKL
+       |
+       +-- validate
+       +-- normalize provenance/context
+       +-- resolve identity
+       +-- map ontology/facets
+       +-- map Information / Knowledge
+       +-- link existing knowledge
+       +-- ingest
+       |
+       v
+   Textus World
+```
 
-- classification;
-- summarization;
-- concept/entity extraction;
-- facet suggestions;
-- relationship discovery;
-- duplicate/related-material assessment;
-- publication suggestions.
-
-A TKL Workflow can delegate such work through TEAI/OpenClaw and receive the result through the Continuation Protocol. Human review can remain an explicit workflow step before publication.
-
-Stable processing discovered through operation should progressively move toward deterministic policies, Workflows and Operations where appropriate.
+Raw acquisition, broad summarization, exploratory comparison and source-set Q&A should normally happen on the Knowledge Lake side before this boundary.
 
 ## Provider independence
 
-The initial Knowledge Lake is Google Workspace, but TKL should be able to acquire material from additional sources through TEAI, for example:
-
-- Slack or other collaboration systems;
-- GitHub;
-- local/project files;
-- Web sources;
-- other enterprise repositories;
-- OpenClaw-accessible tools and services.
-
-Provider-specific connection details should not leak into the core TKL knowledge model.
+Google Workspace + NotebookLM is the first reference environment, not a hard dependency. Future enterprise lakes and knowledge-processing environments can produce the same provider-neutral Knowledge Candidate contract.
 
 ## Initial reference scenario
 
-Phase 1 should establish a minimal end-to-end path:
+Phase 1 validates:
 
 ```text
 Google Workspace
-      |
-      v
-     TEAI
-      |
-      v
-TKL acquisition/curation workflow
-      |
-      v
- KnowledgeHub
-      |
-      v
-     BoK
+   -> NotebookLM / human primary processing
+   -> Knowledge Candidate
+   -> TEAI
+   -> TKL
+   -> KnowledgeHub / Textus World
+   -> BoK
 ```
 
-This scenario is also a reference application for TEAI: it exercises enterprise events, Job/Workflow execution, external integration and AI/agent continuation in a real knowledge-management use case.
+The primary architectural question is no longer how TKL processes raw Drive files. It is how a traceable, context-rich Knowledge Candidate crosses the Knowledge Lake/Textus boundary correctly.
