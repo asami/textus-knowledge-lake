@@ -155,3 +155,17 @@ Google Workspace / NotebookLM
 More precisely, **physical integration is a TEAI responsibility**, and TEAI delegates agent/tool-mediated SaaS access to OpenClaw. Direct deterministic integrations may bypass OpenClaw and use a TEAI endpoint directly.
 
 TKL should see provider-neutral application input such as `KnowledgeCandidateReceived(candidate, sources, provenance, context)`; it should not need to know which Google API, OAuth flow, tool, or agent obtained that data.
+
+## Bidirectional use of OpenClaw through TEAI
+
+The Knowledge Lake flow is not ingress-only. During a TKL ingestion workflow, TKL may use TEAI to invoke or delegate external work through OpenClaw.
+
+```text
+TKL Workflow -> TEAI -> OpenClaw -> Google Workspace / tools / AI
+                              |
+                       result/continuation
+                              v
+                         TEAI -> TKL
+```
+
+A concrete resource retrieval is an **INVOCATION**; an open-ended request such as investigating related project material is a **DELEGATION**, completed through **CONTINUATION**. TKL remains provider-neutral in both cases.
