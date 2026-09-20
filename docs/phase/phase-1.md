@@ -1,68 +1,71 @@
-# Phase 1 — Google Workspace Knowledge Lake Reference Flow
+# Phase 1 — Knowledge Candidate Ingestion Reference Flow
 
 ## Goal
 
-Establish the minimum end-to-end architecture for using Google Workspace as a Knowledge Lake and curating selected material through TKL into KnowledgeHub/BoK, using TEAI as the integration foundation.
+Establish the minimum end-to-end path for importing a knowledge candidate produced by primary processing in a Google Workspace Knowledge Lake into the Textus World.
 
 ## Reference flow
 
 ```text
-Google Workspace
-  -> TEAI source event / Integration Binding
-  -> CNCF Job / Workflow
-  -> TKL acquisition
-  -> classification/enrichment
-  -> curation decision
-  -> KnowledgeHub
-  -> BoK publication/reference
+Google Workspace sources
+  -> NotebookLM / human primary processing
+  -> KnowledgeCandidate
+  -> TEAI
+  -> CNCF Job / TKL Workflow
+  -> validate / normalize / map / ingest
+  -> KnowledgeHub / Textus World
+  -> BoK publication decision
 ```
 
 ## Scope
 
 ### Architecture
 
-- define the TKL/TEAI/KnowledgeHub/BoK responsibility boundary;
-- define initial Knowledge Source, Material, Curation and Publication concepts;
-- define source/provenance identity;
-- define the initial material lifecycle.
+- define the Knowledge Lake / TEAI / TKL / KnowledgeHub / BoK boundary;
+- define an initial provider-neutral KnowledgeCandidate model;
+- define ExternalMaterialReference and provenance requirements;
+- define mapping from candidate concepts into Textus Information/Knowledge;
+- supersede the previous assumption that TKL owns raw-material acquisition/classification.
 
-### Google Workspace reference source
+### Google Workspace reference
 
-- select a narrow Google Drive-based acquisition scenario;
-- represent source file identity and metadata without leaking Google-specific concepts into the core model;
-- receive source changes through TEAI rather than implementing a parallel integration subsystem.
+- use Google Workspace as the source/working Knowledge Lake;
+- use NotebookLM and/or human processing to create one representative knowledge candidate;
+- retain links/citations/provenance to original Workspace materials;
+- do not require TKL to copy all original source artifacts.
 
-### Workflow
+### TEAI integration
 
-- start a CNCF Job/Workflow from the TEAI integration event;
-- acquire/reference the source material;
-- identify and record provenance;
-- classify/enrich;
-- provide a curation decision point;
-- publish/reference selected knowledge in KnowledgeHub/BoK;
-- make execution observable through CNCF Job/Workflow facilities.
+- transport or signal availability of the KnowledgeCandidate;
+- start a CNCF Job/Workflow for ingestion;
+- preserve correlation and integration provenance;
+- provide source retrieval through an external reference where needed.
 
-### AI/agent reference path
+### TKL ingestion workflow
 
-- identify at least one non-deterministic curation step;
-- express it as a knowledge-domain goal;
-- allow TEAI to delegate it through Continuation Protocol to OpenClaw;
-- return a normalized result to the same workflow;
-- retain provenance of the AI-assisted result.
+- validate the candidate contract;
+- normalize provenance and context;
+- resolve candidate/source identity;
+- map concepts/facets and Information/Knowledge;
+- relate to existing knowledge where applicable;
+- make an explicit ingestion/curation decision;
+- ingest accepted content into KnowledgeHub/Textus;
+- retain traceability to source and primary-processing history.
 
 ## Non-goals
 
 Phase 1 does not attempt to:
 
-- support every Google Workspace service;
-- build a generic connector catalog in TKL;
+- reproduce NotebookLM in TKL;
+- ingest every raw Google Drive file;
+- implement broad source summarization/Q&A in TKL;
+- support every Google Workspace API;
 - duplicate TEAI integration infrastructure;
-- duplicate CNCF Job/Workflow/StateMachine;
-- automatically publish all lake material;
-- fully automate curation without an explicit policy/review boundary.
+- duplicate CNCF runtime facilities;
+- fully automate all semantic/curation decisions.
 
 ## Completion criteria
 
-Phase 1 is complete when one representative Google Workspace material item can travel through the reference flow with traceable source/provenance, observable CNCF execution, a curation decision, and a resulting KnowledgeHub/BoK representation or publication decision.
+Phase 1 is complete when a KnowledgeCandidate derived from a small Google Workspace source set can cross the TEAI/TKL boundary and become a traceable Textus Information/Knowledge representation, with provenance back to its original sources and primary processing.
 
-At least one workflow step should also demonstrate the provider-neutral AI/agent continuation path through TEAI/OpenClaw.
+The resulting knowledge must also reach an explicit BoK publication decision, whether published, deferred, or rejected.
