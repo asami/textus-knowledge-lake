@@ -235,3 +235,25 @@ UseCaseSlice
 ```
 
 The exact CML syntax should follow the current SimpleModeling/CML definitions and should not be invented locally in TKL.
+
+
+## Knowledge Workbench boundary (2026-09-23)
+
+The previous Phase 1 wording that TKL sends a reviewed Candidate directly to KnowledgeHub is superseded.
+
+TKL performs discovery and preparation and produces a **raw knowledge candidate / candidate proposal**. Human formation, editing and approval belong to a reusable Knowledge Workbench layer.
+
+```text
+Evidence
+  -> TKL
+  -> PreparedMaterial
+  -> Raw Knowledge Candidate
+  -> Knowledge Workbench
+  -> KnowledgeFormationProposal
+  -> Human Approval
+  -> KnowledgeHub
+```
+
+For the NICT project, TKL therefore integrates primarily with the Knowledge Workbench candidate boundary rather than directly with KnowledgeHub Admission.
+
+The Phase 1 primary use case remains candidate proposal, but its postcondition is now: the proposal can be handed to Knowledge Workbench with complete evidence/provenance. Direct KnowledgeHub admission is not a TKL responsibility.
