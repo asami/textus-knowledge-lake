@@ -12,12 +12,12 @@ TKL の Use Case と Workflow を分離して CML で扱う。
 - Application Capability: Use Case を実現するアプリケーション能力
 - Workflow: Capability を協調させて目的を遂行する実行モデル
 
-Phase 1 では全 Use Case を実装しない。Application Model として将来用途まで定義し、最初の Use Case Slice として KnowledgeHub への Knowledge Candidate Proposal を end-to-end で実装する。
+Phase 1 では全 Use Case を実装しない。Application Model として将来用途まで定義し、最初の Use Case Slice として Evidence から Raw Knowledge Candidate を提案し、Textus Knowledge Workbench へ引き渡す経路を end-to-end で実装する。
 
 ## Actors
 
-- Knowledge Worker — Knowledge Candidate の提案、確認、修正、Admission を行う利用者
-- KnowledgeHub — Candidate を受け取り Admission / Knowledge 管理を行う downstream system
+- Knowledge Worker — Knowledge Candidate の探索・提案を要求し、その根拠を確認する利用者
+- Textus Knowledge Workbench — Raw Knowledge Candidate を受け取り、Formation / Edit / Review / Approval を行う downstream application
 - Resource Provider — Google Workspace、Slack 等の Evidence provider
 - Knowledge Processor — LLM / deterministic processor / KnowledgeHub-oriented processor
 
@@ -27,16 +27,16 @@ TEAI / OpenClaw は原則として Actor ではなく integration mechanism と�
 
 ### Knowledge Acquisition
 
-#### UC-KA-01 Propose Knowledge Candidate — Phase 1 Primary
+#### UC-KA-01 Propose Raw Knowledge Candidate — Phase 1 Primary
 
 Goal:
-分散した Evidence から KnowledgeHub に登録する価値のある Knowledge Candidate を抽出し、Evidence とともに利用者へ提案する。
+分散した Evidence から Knowledge として形成する価値のある Raw Knowledge Candidate を抽出し、Evidence とともに提案して Textus Knowledge Workbench へ引き渡す。
 
 Primary Actor:
 Knowledge Worker
 
 Supporting Actors:
-KnowledgeHub, Resource Provider, Knowledge Processor
+Textus Knowledge Workbench, Resource Provider, Knowledge Processor
 
 Main scenario:
 
@@ -46,26 +46,25 @@ Main scenario:
 4. TKL が必要な Evidence を収集・正規化する。
 5. TKL が PreparedMaterial を生成する。
 6. Knowledge Processor が PreparedMaterial から Knowledge Candidate を抽出する。
-7. TKL が既存 KnowledgeHub Knowledge との関係を確認する。
-8. TKL が Candidate、Evidence、Context、差分/新規性、未解決事項を Proposal として提示する。
-9. Knowledge Worker が Proposal を確認し、必要なら修正する。
-10. Knowledge Worker が Candidate を KnowledgeHub Admission へ送る。
+7. TKL が Candidate、Evidence、Context、rationale、未解決事項を Raw Knowledge Candidate Proposal として構成する。
+8. Knowledge Worker が Proposal と Evidence を確認する。
+9. TKL が Raw Knowledge Candidate と PreparedMaterial / Evidence provenance を Textus Knowledge Workbench へ引き渡す。
+10. Candidate の編集、Semantic Mapping、既存 Knowledge との比較、Human Review / Approval、KnowledgeHub Formation は Workbench 側で行う。
 
 Postconditions:
 
 - Knowledge Candidate が Evidence-grounded な Proposal として存在する。
 - Candidate から PreparedMaterial と canonical Evidence まで provenance を追跡できる。
-- 承認された Candidate を KnowledgeHub Admission 境界へ渡せる。
+- Raw Knowledge Candidate を完全な PreparedMaterial / Evidence provenance とともに Textus Knowledge Workbench 境界へ渡せる。
 
 ### Knowledge Acquisition supporting use cases
 
 - UC-KA-02 Explore Candidates by Theme — テーマを指定して Knowledge Candidate を探索する
 - UC-KA-03 Discover Candidates from New Evidence — 新着 Evidence から候補を発見する
 - UC-KA-04 Inspect Candidate Evidence — Candidate の根拠を確認する
-- UC-KA-05 Compare Candidate with Existing Knowledge — 既存 Knowledge と比較する
-- UC-KA-06 Revise Candidate — Candidate を修正・補足する
-- UC-KA-07 Submit Candidate for Admission — KnowledgeHub Admission へ送る
-- UC-KA-08 Hold or Reject Candidate — Candidate を保留・棄却する
+- UC-KA-05 Deliver Candidate to Knowledge Workbench — Raw Candidate を Workbench へ引き渡す
+
+Candidate の既存 Knowledge 比較、修正、Human Review、Approval、Admission は Textus Knowledge Workbench の Use Case とする。
 
 ### Research / Exploration
 
@@ -111,18 +110,16 @@ Initial capabilities derived from the primary use case:
 - Knowledge Preparation
 - Prepared Material Management
 - Candidate Extraction
-- Existing Knowledge Comparison
-- Candidate Proposal
-- Candidate Review
-- Candidate Submission
+- Raw Candidate Proposal
+- Candidate Delivery to Knowledge Workbench
 - Provenance / Lineage Resolution
 
 ## Phase 1 Application Workflow
 
-### WF-KA-01 Knowledge Candidate Proposal Workflow
+### WF-KA-01 Raw Knowledge Candidate Proposal Workflow
 
 Realizes:
-UC-KA-01 Propose Knowledge Candidate
+UC-KA-01 Propose Raw Knowledge Candidate
 
 ```text
 Start
@@ -148,23 +145,16 @@ Prepare Knowledge Material
 Persist PreparedMaterial
   |
   v
-Extract Knowledge Candidate
+Extract Raw Knowledge Candidate
   |
   v
-Compare Existing Knowledge
+Compose Raw Candidate Proposal
   |
   v
-Compose Candidate Proposal
+Present Candidate + Evidence
   |
   v
-Human Review
-  |
-  +--> revise --> Compose Candidate Proposal
-  |
-  +--> hold/reject --> End
-  |
-  v
-Submit to KnowledgeHub Admission
+Deliver to Textus Knowledge Workbench
   |
   v
 End
@@ -179,7 +169,6 @@ Given:
 - Drive-like file Evidence
 - Gmail-like Communication Evidence
 - Slack-like Communication Evidence
-- existing KnowledgeHub Knowledge fixture
 
 When:
 
@@ -193,10 +182,10 @@ Then:
 - PreparedMaterial can be exported losslessly as JSON;
 - Markdown can be rendered from the canonical model without re-reading sources;
 - an attachment-bearing PreparedMaterial can be exported as KAR;
-- at least one Knowledge Candidate Proposal is generated;
-- the Proposal includes provenance to its Evidence;
-- existing Knowledge can be compared;
-- the accepted Candidate can cross the KnowledgeHub Admission boundary.
+- at least one Raw Knowledge Candidate Proposal is generated;
+- the Proposal includes provenance to its Evidence and PreparedMaterial;
+- the Raw Candidate can cross the Textus Knowledge Workbench boundary;
+- Candidate formation/review/approval is explicitly outside TKL Phase 1.
 
 ## Provider mapping for the NICT pilot
 
@@ -209,7 +198,8 @@ Slack               -> Conversation Provider
 Drive Project       -> Saved context for Gemini in Drive preparation
 Gemini in Drive     -> Preparation processor
 Gemini Notebook     -> Optional content/presentation producer
-KnowledgeHub        -> Candidate admission consumer
+Textus Knowledge Workbench -> Raw Candidate formation/review/approval consumer
+KnowledgeHub        -> downstream Knowledge runtime reached through Workbench
 ```
 
 ## CML implementation direction
