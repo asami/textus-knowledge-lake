@@ -288,3 +288,35 @@ KnowledgeProjection should contain enough semantic context for preparation, for 
 Synchronization should be incremental/version-aware where practical. Changed or superseded Knowledge updates its TKL projection and any Google Workspace representation.
 
 Design goal: candidate discovery becomes a comparison/interaction between **Existing Knowledge and New Evidence**, enabling new/update/support/conflict/relation proposals rather than repeated rediscovery of existing Knowledge.
+
+
+## Knowledge Projection synchronization
+
+Knowledge Feedback uses **incremental append by default** plus periodic/full **context rebuild**.
+
+Core concepts:
+
+- `KnowledgeProjection` — TKL representation of one canonical Knowledge item/version.
+- `KnowledgeProjectionDelta` — incremental feedback unit for add/update/supersede changes.
+- `KnowledgeContextSnapshot` — normalized current Knowledge set as of a point in time.
+
+Operating principle:
+
+> Append frequently, rebuild periodically.
+
+Normal formation/change events append projection deltas so preparation contexts can be refreshed quickly. Because append-only feedback accumulates obsolete versions, duplicates and superseded items, TKL must also support rebuilding a clean context from KnowledgeHub canonical current state.
+
+Core operations (names provisional):
+
+- `appendKnowledgeProjection`
+- `applyKnowledgeProjectionDelta`
+- `buildKnowledgeContextSnapshot`
+- `rebuildKnowledgeContext`
+- `compactKnowledgeContext`
+- `publishKnowledgeContextToWorkspace`
+
+A rebuild should prefer querying KnowledgeHub canonical current state rather than reconstructing truth solely from old deltas.
+
+For external preparation environments such as Google Workspace, expose the current snapshot plus only post-snapshot deltas. Old/superseded projection artifacts must be removed from the active Gemini/Drive Project context or clearly deactivated.
+
+This synchronization mechanism is a **basic TKL capability**, not an optional optimization.
