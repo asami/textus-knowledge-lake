@@ -270,3 +270,93 @@ Determine Scope
 ```
 
 The Google reference implementation projects relevant existing Knowledge into Drive/Drive Project so Gemini in Drive can perform preparation with both the current Knowledge baseline and new Drive/Gmail/Slack Evidence.
+
+
+## Knowledge Feedback application use cases
+
+Knowledge Feedback is a first-class application-use-case group, not merely an internal synchronization workflow.
+
+### Existing use-case impact
+
+Existing TKL use cases must reason against current Knowledge when relevant.
+
+- **UC-KA-01 Propose Raw Knowledge Candidate** — preparation uses Existing Knowledge Context + New Evidence. Proposal should identify related/baseline Knowledge and characterize the observed difference where possible: new, update, support, conflict, or relation.
+- **UC-RE-01 Research Theme Across Sources** — include relevant current Knowledge as a research context/source.
+- **UC-RE-02 Trace Historical Context** — trace current Knowledge back through Candidate/PreparedMaterial/Evidence where available.
+- **UC-RE-03 Compare Views** — compare Evidence-derived views with current Knowledge as well as with each other.
+- **UC-RE-04 Analyze Consensus** — compare current admitted Knowledge with consensus visible in recent Evidence.
+- **UC-RE-05 Extract Open Questions** — check whether an apparent open question is already resolved by current Knowledge.
+- **UC-PA-01 Review Recent Changes** — distinguish ordinary resource change from change that may affect current Knowledge.
+- **UC-PA-06 Notify Significant Change** — prioritize Evidence that supports, updates, conflicts with, or creates relations to current Knowledge.
+
+### UC-KF-01 Synchronize Knowledge Context
+
+Goal:
+Keep TKL's preparation context aligned with current canonical KnowledgeHub Knowledge.
+
+Main scenario:
+
+1. Detect or request changed/relevant Knowledge.
+2. Resolve Knowledge identity and version.
+3. Create/update provider-neutral KnowledgeReference / KnowledgeProjection.
+4. Store/update the projection in TKL.
+5. Mark superseded/stale projections as appropriate.
+6. Make the current projection available to Preparation.
+
+### UC-KF-02 Project Knowledge to Preparation Workspace
+
+Goal:
+Make relevant KnowledgeProjection content usable by an external preparation processor.
+
+Google reference scenario:
+
+```text
+TKL KnowledgeProjection
+ -> Google Workspace Adapter
+ -> Google Docs/files
+ -> Drive Project
+ -> Gemini in Drive
+```
+
+The external representation is not authoritative Knowledge.
+
+### UC-KF-03 Refresh Knowledge Context after Formation
+
+Goal:
+Close the acquisition loop after a candidate is formed/approved.
+
+```text
+TKL Candidate
+ -> TKW
+ -> KnowledgeHub Formation
+ -> formed Knowledge identity/version
+ -> TKL KnowledgeProjection refresh
+ -> next Preparation
+```
+
+### UC-KF-04 Trace Knowledge Formation
+
+Goal:
+Allow a Knowledge Worker to trace formed Knowledge back through formation/candidate/preparation to canonical Evidence where available.
+
+Expected trace:
+
+```text
+Knowledge
+ -> FormationProposal / Candidate
+ -> PreparedMaterial
+ -> EvidenceReference
+ -> canonical provider resource
+```
+
+### Feedback capabilities
+
+Initial capabilities:
+
+- Knowledge Change Detection
+- Knowledge Reference Resolution
+- Knowledge Projection
+- Knowledge Context Synchronization
+- Preparation Workspace Projection
+- Projection Version/Staleness Management
+- Formation Trace Resolution
