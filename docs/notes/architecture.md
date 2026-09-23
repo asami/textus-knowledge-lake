@@ -249,3 +249,42 @@ Provider-native capabilities should be used when available; TKL supplies missing
 10. KAR packages PreparedMaterial plus embedded resources.
 11. Google Workspace is the initial reference provider, not an architectural dependency.
 12. Provenance/lineage must remain traceable from downstream knowledge to canonical external evidence.
+
+## Knowledge feedback loop
+
+TKL must prepare candidates against the **current KnowledgeHub knowledge context**, not from new Evidence alone.
+
+Introduce a provider-neutral Knowledge feedback/projection path:
+
+```text
+KnowledgeHub canonical Knowledge
+        |
+        v
+TKL KnowledgeReference / KnowledgeProjection
+        |
+        +--> TKL preparation context
+        |
+        +--> Google Workspace projection
+                  |
+             Google Docs/files
+                  |
+             Drive Project
+                  |
+             Gemini in Drive
+                  |
+          Existing Knowledge + New Evidence
+                  |
+             Preparation
+                  |
+             PreparedMaterial
+                  |
+          Raw Knowledge Candidate
+```
+
+KnowledgeHub remains canonical. TKL/Google copies are projections, never authoritative Knowledge.
+
+KnowledgeProjection should contain enough semantic context for preparation, for example knowledge identity/version, content/summary, concepts, relations, context and provenance summary. Exact schema remains provisional.
+
+Synchronization should be incremental/version-aware where practical. Changed or superseded Knowledge updates its TKL projection and any Google Workspace representation.
+
+Design goal: candidate discovery becomes a comparison/interaction between **Existing Knowledge and New Evidence**, enabling new/update/support/conflict/relation proposals rather than repeated rediscovery of existing Knowledge.
