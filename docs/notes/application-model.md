@@ -247,3 +247,26 @@ Evidence
 For the NICT project, TKL therefore integrates primarily with the Knowledge Workbench candidate boundary rather than directly with KnowledgeHub Admission.
 
 The Phase 1 primary use case remains candidate proposal, but its postcondition is now: the proposal can be handed to Knowledge Workbench with complete evidence/provenance. Direct KnowledgeHub admission is not a TKL responsibility.
+
+## Existing Knowledge feedback use case
+
+Raw Candidate discovery must use existing Knowledge context when relevant.
+
+Add supporting use case:
+
+- **UC-KA-06 Explore Candidates Against Existing Knowledge** — synchronize/resolve relevant KnowledgeHub Knowledge and use it as preparation context when extracting Raw Knowledge Candidates.
+
+Workflow refinement:
+
+```text
+Determine Scope
+ -> Resolve Evidence
+ -> Resolve Existing Knowledge Context
+ -> Normalize / Project Context
+ -> Prepare (Existing Knowledge + New Evidence)
+ -> PreparedMaterial
+ -> Raw Candidate Proposal
+ -> Knowledge Workbench
+```
+
+The Google reference implementation projects relevant existing Knowledge into Drive/Drive Project so Gemini in Drive can perform preparation with both the current Knowledge baseline and new Drive/Gmail/Slack Evidence.
