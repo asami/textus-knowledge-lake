@@ -89,3 +89,10 @@
 > - remove/deactivate obsolete projection context after rebuild.
 >
 > Principle: append frequently, rebuild periodically.
+
+
+> GOOGLE WORKSPACE PRIORITY NOTE FOR CODEX
+>
+> Treat Drive + Drive Project + Gemini in Drive as the standard Google Preparation route.
+> Gemini Notebook is optional presentation/production tooling and is NOT required by the core use case/workflow or Phase 1.
+> Do not introduce Notebook synchronization as a Phase 1 dependency.
