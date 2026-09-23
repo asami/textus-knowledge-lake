@@ -1,0 +1,66 @@
+# Textus Knowledge Lake CML Model
+
+> NOTE FOR CODEX
+>
+> This file is the canonical CML source location for the TKL application model.
+> Replace this scaffold with valid current CML syntax after checking the CML/Cozy implementation and existing examples.
+> Do not invent unsupported CML syntax.
+>
+> Design source:
+> - docs/notes/application-model.md
+> - docs/notes/architecture.md
+> - docs/journal/2026-09-23-tkl-core-architecture-consolidation.md
+>
+> Modeling intent:
+> - Model application-level Use Cases separately from execution Workflows.
+> - Keep future TKL Use Cases in the application model even when they are outside Phase 1.
+> - Phase 1 primary Use Case is "Propose Knowledge Candidate".
+> - The Phase 1 Application Workflow realizes that Use Case end-to-end through KnowledgeHub Admission.
+> - Derive/associate Application Capabilities where supported by current CML.
+> - Use current CML concepts for Use Case Slice / executable specification only if they are actually supported.
+>
+> Primary application areas:
+> 1. Knowledge Acquisition
+>    - Propose Knowledge Candidate [Phase 1 primary]
+>    - Explore Candidates by Theme
+>    - Discover Candidates from New Evidence
+>    - Inspect Candidate Evidence
+>    - Compare Candidate with Existing Knowledge
+>    - Revise Candidate
+>    - Submit Candidate for Admission
+>    - Hold or Reject Candidate
+> 2. Research / Exploration
+> 3. Project Awareness
+> 4. Content Production
+>
+> Phase 1 workflow outline:
+> Determine Knowledgeization Scope
+> -> Resolve Knowledge Resources
+> -> Collect Evidence
+> -> Normalize Evidence
+> -> Prepare Knowledge Material
+> -> Persist PreparedMaterial
+> -> Extract Knowledge Candidate
+> -> Compare Existing Knowledge
+> -> Compose Candidate Proposal
+> -> Human Review
+> -> Submit to KnowledgeHub Admission
+>
+> Important domain concepts to align with the model:
+> - KnowledgeResource / provider-independent resource identity
+> - Evidence
+> - Communication Value Objects
+> - PreparedMaterial Entity
+> - KnowledgeCandidate
+> - Provenance / Lineage
+> - Admission boundary
+>
+> Provider-specific Google Workspace / Slack details are implementation mappings,
+> not the semantic core of this CML model.
+>
+> TODO(Codex):
+> - Inspect current CML grammar/model support and representative src/main/cozy/*.cml examples.
+> - Convert docs/notes/application-model.md into valid CML.
+> - Preserve the Use Case vs Workflow distinction.
+> - Keep Phase 1 scope explicit.
+> - Validate/generate with the repository's current Cozy/CML tooling.
