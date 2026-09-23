@@ -64,3 +64,17 @@
 > - Preserve the Use Case vs Workflow distinction.
 > - Keep Phase 1 scope explicit.
 > - Validate/generate with the repository's current Cozy/CML tooling.
+
+
+> KNOWLEDGE FEEDBACK NOTE FOR CODEX
+>
+> Add Knowledge Feedback as a first-class application-use-case group in the native CML model where supported:
+> - Synchronize Knowledge Context
+> - Project Knowledge to Preparation Workspace
+> - Refresh Knowledge Context after Formation
+> - Trace Knowledge Formation
+>
+> Existing acquisition/research/awareness use cases must use Existing Knowledge Context when relevant, especially the primary Raw Knowledge Candidate proposal flow.
+>
+> Model the application loop:
+> KnowledgeHub -> TKL KnowledgeProjection -> Preparation -> Raw Candidate -> TKW -> KnowledgeHub.
