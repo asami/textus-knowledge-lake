@@ -1,175 +1,251 @@
 # Knowledge Lake Architecture
 
-## Purpose
+## Current decision
 
-TKL is the gateway between an external **Knowledge Lake** and the **Textus World**.
+**Textus Knowledge Lake (TKL) itself is the Knowledge Lake.**
 
-The Knowledge Lake performs source management and primary knowledge processing. TKL receives the resulting Knowledge Candidates and performs semantic ingestion into Textus.
+Google Workspace, Slack, Gmail, Web and future stores are providers/resources used by TKL. TKL defines the provider-neutral resource identity, evidence model, preparation model, lifecycle, provenance and processing boundary.
 
-## Reference environment
+The previous assumption that Google Workspace itself is the Knowledge Lake is superseded.
 
-The initial reference environment is:
-
-```text
-Google Workspace
-  +-- source/working materials
-  +-- NotebookLM
-  +-- Workspace AI
-  +-- human knowledge work
-          |
-          v
-   KnowledgeCandidate
-          |
-         TEAI
-          |
-         TKL
-          |
-     Textus World
-```
-
-Google Workspace is not merely raw storage. It is an operational Knowledge Lake with its own interactive knowledge-processing capabilities.
-
-## Boundary
-
-### Knowledge Lake side
-
-Responsible for:
-
-- storing original and working material;
-- organizing source sets for human work;
-- reading and comparing sources;
-- exploratory Q&A;
-- summarization and analysis;
-- extracting initial issues/concepts/claims;
-- human notes and interpretation;
-- producing a candidate suitable for Textus ingestion.
-
-NotebookLM is a reference **interactive primary knowledge processor** in this layer.
-
-### TEAI
-
-Responsible for the integration boundary:
-
-- detecting/transporting candidate publication events;
-- provider authentication and external access;
-- mapping transport DTOs;
-- delivery/retry/idempotency;
-- starting CNCF Job/Workflow;
-- external AI/agent continuation when needed;
-- integration audit/provenance.
-
-### TKL
-
-Responsible for semantic ingestion:
-
-- validate KnowledgeCandidate;
-- normalize source/provenance/context;
-- resolve identity;
-- map concepts/facets/ontology;
-- map candidate content to Textus Information/Knowledge;
-- link to existing Textus knowledge;
-- apply ingestion/curation policy;
-- ingest accepted results;
-- retain traceability to external source and derived artifacts.
-
-TKL should not duplicate NotebookLM-style primary processing.
-
-### KnowledgeHub
-
-Responsible for knowledge representation, linking, processing, retrieval and services after ingestion.
-
-### BoK
-
-Responsible for curated knowledge publication. A Knowledge Candidate does not automatically become a BoK item.
-
-## Core model direction
-
-### KnowledgeCandidate
+## Core pipeline
 
 ```text
-KnowledgeCandidate
-  +-- Content
-  +-- Claim*
-  +-- Concept*
-  +-- SourceReference*
-  +-- Citation*
-  +-- Context
-  +-- Provenance
-  +-- ProcessingHistory
-  +-- HumanNote*
+External Resources
+Drive / Gmail / Slack / Web / ...
+        |
+        v
+TKL Resource Registry
+        |
+        v
+Evidence
+        |
+        v
+Preparation
+        |
+        v
+PreparedMaterial Entity
+        |
+        +--> KnowledgeHub Processor -> KnowledgeCandidate -> Admission
+        +--> LLM Context -> ChatGPT / Gemini / Codex / local LLM
+        +--> Presentation -> Gemini Notebook / other producers
 ```
 
-This is conceptual and not yet a fixed implementation schema.
+Preparation is a core TKL capability. Downstream processing and presentation are purpose-specific and replaceable.
 
-### ExternalMaterialReference
+## Federated resource model
 
-Original source artifacts can remain in the external lake.
+External resources are referenced by default rather than copied.
+
+Design principle:
+
+> Reference by default, materialize when necessary.
+
+TKL assigns a stable provider-independent resource identity, for example:
 
 ```text
-ExternalMaterialReference
-  +-- provider
-  +-- resourceId
-  +-- version
-  +-- checksum
-  +-- capturedAt
+textus:klake:kr:<id>
 ```
 
-The reference must be sufficient to preserve identity and provenance and, where policy permits, retrieve the material through TEAI.
-
-### Derived material provenance
-
-A NotebookLM or human-produced candidate is derived material. Its provenance should preserve:
-
-- source materials;
-- processor/agent;
-- processing time;
-- relevant instruction/context where available;
-- human review/annotation;
-- citations/source grounding.
-
-This supports the wider Textus principle that meaning is contextual: who attached meaning, when, and for what purpose matters.
-
-## Lifecycle boundary
-
-The previous TKL lifecycle beginning with `Raw -> Captured` is superseded.
-
-Raw/captured/working-material lifecycle belongs to the external Knowledge Lake.
-
-TKL begins approximately here:
+A KnowledgeResource Entity resolves that identity to one or more provider representations.
 
 ```text
-Knowledge Lake
-  Raw -> Working -> Primary Processing
-                         |
-                         v
-                 KnowledgeCandidate
-                         |
-                    TKL boundary
-                         |
-          Validate -> Interpret -> Map
-                         |
-                    Ingest/Reject
-                         |
-                    Textus World
+KnowledgeResource
+  id: textus:klake:kr:...
+  representations:
+    - provider: google-drive
+      externalId: ...
+    - provider: slack
+      externalId: ...
+    - provider: local/materialized
+      ...
 ```
 
-## AI processing layers
+Provider-specific IDs and locations must not leak into PreparedMaterial as canonical identity.
 
-The architecture can use different AI layers without collapsing them into one agent:
+Materialization is used when an immutable snapshot is required, a target workspace cannot access the original provider, a KAR must embed a resource, or policy requires local retention.
 
-1. **Knowledge Lake AI** — NotebookLM/Workspace AI: understand source sets and produce candidate knowledge.
-2. **Integration AI** — OpenClaw through TEAI: achieve external goals and interact with tools/services/humans.
-3. **Knowledge AI** — KnowledgeHub: operate on formal Textus knowledge and relationships.
+## Provider roles
 
-TKL coordinates the transition into layer 3; it does not replace layers 1 or 2.
+### Google Drive
+
+File/resource provider and a convenient preparation environment.
+
+NICT pilot physical structure:
+
+```text
+NICT KnowledgeHub/
+├── 00_Inbox
+├── 10_Evidence
+├── 20_Artifacts
+└── 90_Archive
+```
+
+This structure represents storage role/resource lifecycle, not knowledge-processing workflow state.
+
+### Gmail
+
+Mail Evidence provider. Relevant communications are identified with labels. Mail remains canonical in Gmail unless materialization is required.
+
+### Slack
+
+Conversation Evidence provider. Channel/thread/message data remain canonical in Slack. Relevant scopes may be projected/materialized into Drive for Gemini processing.
+
+### Gemini in Drive / Drive Project
+
+Gemini in Drive is used primarily for **Preparation**.
+
+Drive Project is a saved/persistent Drive context for Gemini in Drive: files and folders that should normally be in reasoning scope can be registered in advance. Additional resources such as Gmail can be introduced during reasoning.
+
+For Slack or other unsupported providers, TKL imports a normalized representation into Drive first.
+
+### Gemini Notebook
+
+Gemini Notebook is optional and is not part of the mandatory preparation pipeline.
+
+Its strength is production/presentation from an explicit file-level Source Set: reports, Mind Maps, Slide Decks, Infographics, Audio, Video, etc.
+
+TKL may synchronize selected files into a Notebook when such output is useful. KnowledgeHub-oriented processing does not need to pass through Gemini Notebook.
+
+## Communication model
+
+Communication data from Gmail, Slack and similar providers is normalized into provider-independent Value Objects before import or processing.
+
+Initial model direction:
+
+```text
+Communication
+├─ Kind
+├─ Subject
+├─ Context
+├─ Participants
+│  └─ Participant
+├─ Messages
+│  └─ Message
+│     ├─ Sender
+│     ├─ Recipients
+│     ├─ Timestamp
+│     ├─ Content
+│     ├─ ReplyTo
+│     └─ AttachmentReference*
+├─ SourceReference
+└─ Provenance
+```
+
+Provider-specific fields such as Gmail thread IDs and Slack channel/thread IDs belong in provider references/metadata.
+
+The VO can be serialized losslessly to JSON. For Google preparation, the Google Workspace Adapter may render it as Google Docs instead when that gives Gemini better reasoning quality.
+
+The choice JSON vs Google Docs is an adapter/policy decision and should be evaluated with fixtures.
+
+## PreparedMaterial
+
+PreparedMaterial is a TKL-managed **Entity**, not merely an external document.
+
+It has a stable ID and lifecycle and is persisted in the TKL database.
+
+Conceptual structure:
+
+```text
+PreparedMaterial
+├─ PreparedMaterialId
+├─ Version
+├─ Purpose
+├─ Context
+├─ Sources
+├─ Sections / Content
+├─ EvidenceReferences
+├─ Resources
+├─ Provenance
+├─ PreparationHistory
+└─ Status
+```
+
+PreparedMaterial references Evidence through TKL resource IDs such as `textus:klake:kr:...`.
+
+The TKL domain model is authoritative. Serialization formats are mappings of that model.
+
+## PreparedMaterial serialization
+
+### JSON
+
+JSON is the canonical lossless interchange/export representation.
+
+It must contain all semantic and structural information needed to produce the LLM/human Markdown projection without re-reading external sources.
+
+### Markdown
+
+Markdown is generated from PreparedMaterial for LLM/human consumption. It is a projection, not the system of record.
+
+### KAR — Knowledge Archive
+
+When PreparedMaterial needs embedded resources, export it as a **KAR (Knowledge Archive)**.
+
+KAR is a ZIP-compatible package, for example:
+
+```text
+example.kar
+├── prepared-material.json
+├── META-INF/
+│   └── manifest.json
+└── resources/
+    ├── source.pdf
+    └── image.png
+```
+
+If there are no embedded resources, plain `*.json` is sufficient.
+
+JSON and KAR represent the same logical PreparedMaterial model; KAR adds packaged resources.
+
+## Knowledge processing
+
+PreparedMaterial is the provider-neutral intermediate representation between Preparation and purpose-specific processing.
+
+```text
+PreparedMaterial
+    |
+    +--> Markdown -> LLM reasoning
+    |
+    +--> KnowledgeHub Processor
+    |       -> Information/Knowledge candidates
+    |
+    +--> Presentation Processor
+            -> Gemini Notebook / Slide / Audio / Video / ...
+```
+
+KnowledgeHub processing should directly map PreparedMaterial into KnowledgeHub-oriented candidates; Gemini Notebook is not required.
+
+## Integration boundary
+
+TKL owns Knowledge Lake semantics and orchestration.
+
+Provider adapters map TKL concepts to provider capabilities.
+
+TEAI/OpenClaw may perform physical integration and external actions where appropriate.
+
+```text
+TKL Domain / Workflow
+       |
+Provider Adapters
+       |
+TEAI / OpenClaw where needed
+       |
+Google / Slack / other external APIs
+```
+
+Provider-native capabilities should be used when available; TKL supplies missing federation, synchronization, normalization, materialization and provenance semantics.
 
 ## Design principles
 
-1. TKL starts from Knowledge Candidates, not arbitrary raw lake content.
-2. Primary exploratory knowledge processing belongs in the Knowledge Lake.
-3. Original materials may remain external and be referenced rather than copied.
-4. Provenance must connect Textus knowledge through the candidate to original sources.
-5. Provider-specific integration belongs to TEAI.
-6. NotebookLM is a reference processor, not a TKL dependency.
-7. The KnowledgeCandidate contract should be provider-neutral.
-8. Ingestion into Textus is an explicit semantic boundary.
+1. TKL is the Knowledge Lake.
+2. External systems are providers, not the TKL domain model.
+3. Reference external resources by default; copy/materialize only when necessary.
+4. TKL issues stable provider-independent resource identities.
+5. Preparation is mandatory/core; downstream processing is purpose-specific.
+6. PreparedMaterial is the central provider-neutral IR and a persisted Entity.
+7. TKL domain objects are authoritative; JSON/KAR/Markdown are mappings/projections.
+8. Communication is normalized through provider-independent Value Objects.
+9. JSON is lossless; Markdown is generated for LLM/human use.
+10. KAR packages PreparedMaterial plus embedded resources.
+11. Google Workspace is the initial reference provider, not an architectural dependency.
+12. Provenance/lineage must remain traceable from downstream knowledge to canonical external evidence.
