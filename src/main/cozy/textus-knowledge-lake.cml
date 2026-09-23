@@ -78,3 +78,14 @@
 >
 > Model the application loop:
 > KnowledgeHub -> TKL KnowledgeProjection -> Preparation -> Raw Candidate -> TKW -> KnowledgeHub.
+
+
+> KNOWLEDGE PROJECTION SYNC NOTE FOR CODEX
+>
+> Model the basic Knowledge Feedback synchronization capabilities/use cases where supported:
+> - append KnowledgeProjectionDelta for new/update/supersede changes;
+> - build/rebuild KnowledgeContextSnapshot from KnowledgeHub canonical current state;
+> - publish current snapshot + post-snapshot deltas to preparation workspaces;
+> - remove/deactivate obsolete projection context after rebuild.
+>
+> Principle: append frequently, rebuild periodically.
