@@ -381,3 +381,26 @@ Gemini Notebook is an optional producer for this category.
 Drive may retain historical artifacts, but **active reasoning context must remain clean**. TKL/Google Workspace Adapter should manage which Evidence, KnowledgeContext and Preparation artifacts are active in Drive Project/Gemini context.
 
 Old/superseded preparation artifacts should be removed from active context or archived/deactivated rather than continuously accumulated.
+
+
+## Google AI workspace priority
+
+For the current Google reference implementation, **Gemini in Drive + Drive Project is the standard Preparation route**.
+
+```text
+Evidence / KnowledgeContext
+ -> Google Drive / Drive Project
+ -> Gemini in Drive
+ -> Preparation Artifact
+ -> TKL PreparedMaterial
+ -> Raw Knowledge Candidate
+```
+
+Gemini Notebook is **optional** and is not part of the mandatory/core Knowledge Preparation workflow. Use it when its production/presentation capabilities (Slide Deck, Infographic, Mind Map, Audio, Video, Report, etc.) add value.
+
+Operational shorthand:
+
+- Gemini in Drive: **Prepare / Think**
+- Gemini Notebook: **Synthesize / Present when useful**
+
+TKL core and provider-neutral models must not depend on Gemini Notebook.
