@@ -320,3 +320,64 @@ A rebuild should prefer querying KnowledgeHub canonical current state rather tha
 For external preparation environments such as Google Workspace, expose the current snapshot plus only post-snapshot deltas. Old/superseded projection artifacts must be removed from the active Gemini/Drive Project context or clearly deactivated.
 
 This synchronization mechanism is a **basic TKL capability**, not an optional optimization.
+
+
+## Google Drive artifact layout and preparation operation
+
+The NICT Google Drive reference environment uses:
+
+```text
+NICT KnowledgeHub/
+├── 00_Inbox
+├── 10_Evidence
+├── 20_Artifacts
+│   ├── Preparation/
+│   ├── KnowledgeContext/
+│   └── Presentation/
+└── 90_Archive
+```
+
+### 20_Artifacts/Preparation
+
+Stores preparation artifacts produced through Gemini in Drive / human knowledge work, normally as Google Docs or another Gemini-friendly representation.
+
+These are **not canonical PreparedMaterial**. They are external preparation artifacts that TKL imports/normalizes into a persisted PreparedMaterial Entity.
+
+```text
+Evidence + KnowledgeContext
+ -> Drive Project / Gemini in Drive
+ -> 20_Artifacts/Preparation
+ -> TKL import
+ -> PreparedMaterial Entity
+ -> Raw Knowledge Candidate
+```
+
+Preparation artifacts may remain in Drive as history, but only currently relevant artifacts should remain in active Gemini/Drive Project reasoning context.
+
+### 20_Artifacts/KnowledgeContext
+
+Stores Google Workspace representations of Knowledge Feedback from KnowledgeHub/TKL.
+
+This area contains current KnowledgeContext snapshots and, where needed, post-snapshot deltas for Gemini preparation. KnowledgeHub remains canonical.
+
+Conceptually:
+
+```text
+KnowledgeContext/
+  Current/   # clean current snapshot/projection set
+  Delta/     # changes after the current snapshot
+```
+
+Exact physical subfolder creation may be deferred until automation needs it; the logical roles are fixed.
+
+### 20_Artifacts/Presentation
+
+Stores derived presentation/output artifacts such as reports, Slide Decks, Infographics, Mind Maps, Audio or Video when these are retained in Drive.
+
+Gemini Notebook is an optional producer for this category.
+
+### Operational rule
+
+Drive may retain historical artifacts, but **active reasoning context must remain clean**. TKL/Google Workspace Adapter should manage which Evidence, KnowledgeContext and Preparation artifacts are active in Drive Project/Gemini context.
+
+Old/superseded preparation artifacts should be removed from active context or archived/deactivated rather than continuously accumulated.
