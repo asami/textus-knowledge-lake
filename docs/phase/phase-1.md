@@ -69,3 +69,10 @@ Phase 1 does not attempt to:
 Phase 1 is complete when a KnowledgeCandidate derived from a small Google Workspace source set can cross the TEAI/TKL boundary and become a traceable Textus Information/Knowledge representation, with provenance back to its original sources and primary processing.
 
 The resulting knowledge must also reach an explicit BoK publication decision, whether published, deferred, or rejected.
+
+
+## Google reference implementation priority
+
+Phase 1 should prioritize the Google preparation route based on **Drive + Drive Project + Gemini in Drive** where live Google integration is introduced.
+
+Gemini Notebook integration is not required for Phase 1 closure. It is an optional later presentation/production integration and must not expand the Phase 1 scope.
