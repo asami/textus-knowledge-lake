@@ -360,3 +360,26 @@ Initial capabilities:
 - Preparation Workspace Projection
 - Projection Version/Staleness Management
 - Formation Trace Resolution
+
+
+## Knowledge Projection synchronization use cases
+
+Knowledge Feedback includes both incremental and replacement-style synchronization.
+
+- **UC-KF-05 Append Knowledge Projection Delta** — append new/update/supersede Knowledge changes to the TKL preparation context.
+- **UC-KF-06 Rebuild Knowledge Context** — replace/compact the accumulated context with a clean snapshot derived from canonical current KnowledgeHub state.
+- **UC-KF-07 Publish Current Knowledge Context** — synchronize current snapshot + post-snapshot deltas to a preparation workspace such as Google Drive/Drive Project.
+
+Rebuild is a normal lifecycle operation because long-running append-only contexts accumulate obsolete versions, duplicates and superseded Knowledge. Candidate preparation should consume a clear current baseline.
+
+Reference workflow:
+
+```text
+KnowledgeHub changes
+ -> append KnowledgeProjectionDelta*
+ -> TKL current context
+ -> periodic/on-demand rebuild from KnowledgeHub current state
+ -> KnowledgeContextSnapshot
+ -> publish snapshot + later deltas
+ -> Gemini/other preparation
+```
