@@ -8,6 +8,14 @@ Google Workspace, Slack, Gmail, Web and future stores are providers/resources us
 
 The previous assumption that Google Workspace itself is the Knowledge Lake is superseded.
 
+### Initial backend and processing contexts (2026-10-02)
+
+The first target is Google Workspace-backed TKL. Its persistent physical representation is a Drive folder or folder set, with Drive JSON as the initial system of record for TKL metadata and PreparedMaterial; a separate TKL DB is not required initially.
+
+Drive Project and Gemini Notebook realize purpose-specific Knowledge Processing Contexts over that storage. A context selects Evidence and Existing Knowledge for preparation, analysis, synthesis or production. TKL records context identity, purpose, source versions, processing history and output lineage. Multiple contexts may reuse the same resources. Notebook is not restricted to presentation, and its implementation is not required for the first Drive Project slice.
+
+TKL hands Raw Candidates to TKW; TKW owns formation, editing, review, approval and Admission. TKL also prepares source material for existing TKW candidates. See [Google Workspace-backed TKL](google-workspace-backed-tkl.md) for the current persistence, context and handoff decisions.
+
 ## Core pipeline
 
 ```text
@@ -26,7 +34,7 @@ Preparation
         v
 PreparedMaterial Entity
         |
-        +--> KnowledgeHub Processor -> KnowledgeCandidate -> Admission
+        +--> Candidate Processor -> Raw Candidate -> TKW -> KnowledgeHub
         +--> LLM Context -> ChatGPT / Gemini / Codex / local LLM
         +--> Presentation -> Gemini Notebook / other producers
 ```
@@ -103,9 +111,9 @@ For Slack or other unsupported providers, TKL imports a normalized representatio
 
 Gemini Notebook is optional and is not part of the mandatory preparation pipeline.
 
-Its strength is production/presentation from an explicit file-level Source Set: reports, Mind Maps, Slide Decks, Infographics, Audio, Video, etc.
+It is a Knowledge Processing Context option for preparation, analysis, synthesis and production/presentation. The concrete product/API and supported capabilities must be checked when its adapter is designed.
 
-TKL may synchronize selected files into a Notebook when such output is useful. KnowledgeHub-oriented processing does not need to pass through Gemini Notebook.
+TKL may project selected resources into a Notebook when useful. The initial Drive Project implementation does not require Notebook integration. See [the context model](google-workspace-backed-tkl.md).
 
 ## Communication model
 
@@ -142,7 +150,7 @@ The choice JSON vs Google Docs is an adapter/policy decision and should be evalu
 
 PreparedMaterial is a TKL-managed **Entity**, not merely an external document.
 
-It has a stable ID and lifecycle and is persisted in the TKL database.
+It has a stable ID and lifecycle. In the initial Google Workspace backend it is persisted as canonical JSON in TKL Drive folders; a separate TKL database is not mandatory.
 
 Conceptual structure:
 
@@ -207,13 +215,13 @@ PreparedMaterial
     +--> Markdown -> LLM reasoning
     |
     +--> KnowledgeHub Processor
-    |       -> Information/Knowledge candidates
+    |       -> Raw Information/Knowledge candidates -> TKW -> KnowledgeHub
     |
     +--> Presentation Processor
             -> Gemini Notebook / Slide / Audio / Video / ...
 ```
 
-KnowledgeHub processing should directly map PreparedMaterial into KnowledgeHub-oriented candidates; Gemini Notebook is not required.
+Candidate processing maps PreparedMaterial into Raw Candidates for TKW. Formation, editing, review, approval and KnowledgeHub Admission belong to TKW; Gemini Notebook is not required for the initial path.
 
 ## Integration boundary
 
@@ -396,11 +404,11 @@ Evidence / KnowledgeContext
  -> Raw Knowledge Candidate
 ```
 
-Gemini Notebook is **optional** and is not part of the mandatory/core Knowledge Preparation workflow. Use it when its production/presentation capabilities (Slide Deck, Infographic, Mind Map, Audio, Video, Report, etc.) add value.
+Gemini Notebook is an alternative Knowledge Processing Context for preparation, analysis, synthesis and production. Its integration is optional for the initial implementation, which prioritizes Drive Project.
 
 Operational shorthand:
 
 - Gemini in Drive: **Prepare / Think**
-- Gemini Notebook: **Synthesize / Present when useful**
+- Gemini Notebook: **Prepare / Analyze / Synthesize / Present when useful**
 
 TKL core and provider-neutral models must not depend on Gemini Notebook.
