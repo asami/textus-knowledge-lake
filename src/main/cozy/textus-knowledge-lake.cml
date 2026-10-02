@@ -9,26 +9,29 @@
 > Design source:
 > - docs/notes/application-model.md
 > - docs/notes/architecture.md
+> - docs/phase/phase-1.md
+> - docs/journal/2026-10-02-phase-1-project-local-boundary.md
 > - docs/journal/2026-09-23-tkl-core-architecture-consolidation.md
 >
 > Modeling intent:
 > - Model application-level Use Cases separately from execution Workflows.
 > - Keep future TKL Use Cases in the application model even when they are outside Phase 1.
-> - Phase 1 primary Use Case is "Propose Knowledge Candidate".
-> - The Phase 1 Application Workflow realizes that Use Case end-to-end through KnowledgeHub Admission.
+> - Phase 1 primary Use Case is "Propose Raw Knowledge Candidate".
+> - Phase 1 is project-local: implement TKL preparation/proposal and validate its boundary with local fixtures.
+> - Actual TKW receipt, KnowledgeHub Admission, TEAI transport and BoK publication are external follow-up proposals.
+> - Manage integration requirements and deliver concrete owner proposals at Phase closure.
 > - Derive/associate Application Capabilities where supported by current CML.
 > - Use current CML concepts for Use Case Slice / executable specification only if they are actually supported.
 >
 > Primary application areas:
 > 1. Knowledge Acquisition
->    - Propose Knowledge Candidate [Phase 1 primary]
+>    - Propose Raw Knowledge Candidate [Phase 1 primary]
 >    - Explore Candidates by Theme
 >    - Discover Candidates from New Evidence
 >    - Inspect Candidate Evidence
->    - Compare Candidate with Existing Knowledge
->    - Revise Candidate
->    - Submit Candidate for Admission
->    - Hold or Reject Candidate
+>    - Prepare Against Existing Knowledge Context
+>    - Deliver Raw Candidate Proposal [TKL side; local boundary fixture in Phase 1]
+>    - Candidate editing/review/approval/Admission belong to TKW.
 > 2. Research / Exploration
 > 3. Project Awareness
 > 4. Content Production
@@ -38,22 +41,31 @@
 > -> Resolve Knowledge Resources
 > -> Collect Evidence
 > -> Normalize Evidence
+> -> Create / Resolve KnowledgeProcessingContext
+> -> Record External Context Binding
+> -> Create ProcessingRun / Fix Input and Existing Information Snapshots
 > -> Prepare Knowledge Material
 > -> Persist PreparedMaterial
-> -> Extract Knowledge Candidate
-> -> Compare Existing Knowledge
+> -> Extract Raw Knowledge Candidate
 > -> Compose Candidate Proposal
-> -> Human Review
-> -> Submit to KnowledgeHub Admission
+> -> Present Proposal and Evidence
+> -> Export Proposal / Record TKL Boundary Result and Correspondence
+> -> Emit External Integration Proposals at Phase Closure
+>
+> Use repository-owned source/result fixtures, local persistence and simulated boundary results for Phase 1.
+> A fixture receipt does not establish TKW deduplication, human approval or actual Admission.
+> Do not introduce another project's build/service as a closure dependency or implement its replacement locally.
 >
 > Important domain concepts to align with the model:
 > - KnowledgeResource / provider-independent resource identity
 > - Evidence
+> - KnowledgeProcessingContext / externalContextBindings
+> - ProcessingRun / fixed input manifest and retained-content status
 > - Communication Value Objects
 > - PreparedMaterial Entity
-> - KnowledgeCandidate
+> - RawCandidateProposal / producer-scoped proposalId
 > - Provenance / Lineage
-> - Admission boundary
+> - TKL proposal/result correlation boundary
 >
 > Provider-specific Google Workspace / Slack details are implementation mappings,
 > not the semantic core of this CML model.
@@ -74,10 +86,11 @@
 > - Refresh Knowledge Context after Formation
 > - Trace Knowledge Formation
 >
-> Existing acquisition/research/awareness use cases must use Existing Knowledge Context when relevant, especially the primary Raw Knowledge Candidate proposal flow.
+> Existing acquisition/research/awareness use cases use Existing Knowledge Context when relevant; Phase 1 uses a versioned local baseline fixture.
 >
 > Model the application loop:
 > KnowledgeHub -> TKL KnowledgeProjection -> Preparation -> Raw Candidate -> TKW -> KnowledgeHub.
+> This is the future application relationship. Live feedback synchronization is follow-on scope, managed in the integration register.
 
 
 > KNOWLEDGE PROJECTION SYNC NOTE FOR CODEX
@@ -89,10 +102,12 @@
 > - remove/deactivate obsolete projection context after rebuild.
 >
 > Principle: append frequently, rebuild periodically.
+> Keep full live synchronization outside project-local Phase 1 acceptance.
 
 
 > GOOGLE WORKSPACE PRIORITY NOTE FOR CODEX
 >
-> Treat Drive + Drive Project + Gemini in Drive as the standard Google Preparation route.
-> Gemini Notebook is optional presentation/production tooling and is NOT required by the core use case/workflow or Phase 1.
+> Target Drive folders for production TKL JSON storage and Drive Project for the first external preparation context.
+> Phase 1 validates local representations/manual-result fixtures without live Google operations.
+> Gemini Notebook is an optional context for preparation/analysis/synthesis/production; exact product/API capabilities need adapter verification.
 > Do not introduce Notebook synchronization as a Phase 1 dependency.

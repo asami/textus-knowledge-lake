@@ -1,0 +1,316 @@
+{
+  "schema": "tkl.preparation-bundle.v1",
+  "resources": [
+    {
+      "ref": {
+        "id": "resource:資料/α",
+        "revision": 1
+      },
+      "kind": "document",
+      "title": "資料 version 1",
+      "location": {
+        "provider": "google-workspace",
+        "externalId": "drive-doc-001",
+        "uri": "https://drive.example.invalid/doc/001"
+      }
+    },
+    {
+      "ref": {
+        "id": "resource:資料/α",
+        "revision": 2
+      },
+      "kind": "document",
+      "title": "資料 version 2",
+      "location": {
+        "provider": "google-workspace",
+        "externalId": "drive-doc-001",
+        "uri": null
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "ref": {
+        "id": "evidence:資料/α",
+        "revision": 1
+      },
+      "resourceRef": {
+        "id": "resource:資料/α",
+        "revision": 1
+      },
+      "providerRevision": "drive-revision-a",
+      "snapshot": {
+        "id": "snapshot:資料/α-1",
+        "retention": "retained",
+        "content": "日本語の資料 🌱\n第二行\n",
+        "mediaType": "text/plain",
+        "provenance": {
+          "status": "known",
+          "actor": "fixture operator",
+          "description": "Manually supplied fixture metadata; no live execution."
+        }
+      }
+    },
+    {
+      "ref": {
+        "id": "evidence:資料/α",
+        "revision": 2
+      },
+      "resourceRef": {
+        "id": "resource:資料/α",
+        "revision": 2
+      },
+      "providerRevision": null,
+      "snapshot": {
+        "id": "snapshot:資料/α-2",
+        "retention": "reference-only",
+        "content": null,
+        "mediaType": "text/plain",
+        "provenance": {
+          "status": "unknown",
+          "actor": null,
+          "description": "The source actor and processor-visible content are unknown."
+        }
+      }
+    }
+  ],
+  "contexts": [
+    {
+      "ref": {
+        "id": "context:調査",
+        "revision": 1
+      },
+      "title": "Local preparation context",
+      "evidenceRefs": [
+        {
+          "id": "evidence:資料/α",
+          "revision": 1
+        },
+        {
+          "id": "evidence:資料/α",
+          "revision": 2
+        }
+      ],
+      "bindings": [
+        {
+          "id": "binding-project-001",
+          "kind": "drive-project",
+          "provider": "google-workspace",
+          "externalId": "drive-project-001"
+        }
+      ],
+      "existingInformation": [
+        {
+          "ref": {
+            "id": "information:baseline",
+            "revision": 3
+          },
+          "source": "knowledgehub:local-fixture",
+          "title": "Versioned local baseline",
+          "snapshot": {
+            "id": "snapshot:baseline-3",
+            "retention": "retained",
+            "content": "既存情報 baseline\n",
+            "mediaType": "text/plain",
+            "provenance": {
+              "status": "known",
+              "actor": "fixture operator",
+              "description": "Manually supplied fixture metadata; no live execution."
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "id": "run-local-001",
+      "input": {
+        "id": "run-input-local-001",
+        "context": {
+          "ref": {
+            "id": "context:調査",
+            "revision": 1
+          },
+          "title": "Local preparation context",
+          "evidenceRefs": [
+            {
+              "id": "evidence:資料/α",
+              "revision": 1
+            },
+            {
+              "id": "evidence:資料/α",
+              "revision": 2
+            }
+          ],
+          "bindings": [
+            {
+              "id": "binding-project-001",
+              "kind": "drive-project",
+              "provider": "google-workspace",
+              "externalId": "drive-project-001"
+            }
+          ],
+          "existingInformation": [
+            {
+              "ref": {
+                "id": "information:baseline",
+                "revision": 3
+              },
+              "source": "knowledgehub:local-fixture",
+              "title": "Versioned local baseline",
+              "snapshot": {
+                "id": "snapshot:baseline-3",
+                "retention": "retained",
+                "content": "既存情報 baseline\n",
+                "mediaType": "text/plain",
+                "provenance": {
+                  "status": "known",
+                  "actor": "fixture operator",
+                  "description": "Manually supplied fixture metadata; no live execution."
+                }
+              }
+            }
+          ]
+        },
+        "resources": [
+          {
+            "ref": {
+              "id": "resource:資料/α",
+              "revision": 1
+            },
+            "kind": "document",
+            "title": "資料 version 1",
+            "location": {
+              "provider": "google-workspace",
+              "externalId": "drive-doc-001",
+              "uri": "https://drive.example.invalid/doc/001"
+            }
+          },
+          {
+            "ref": {
+              "id": "resource:資料/α",
+              "revision": 2
+            },
+            "kind": "document",
+            "title": "資料 version 2",
+            "location": {
+              "provider": "google-workspace",
+              "externalId": "drive-doc-001",
+              "uri": null
+            }
+          }
+        ],
+        "evidence": [
+          {
+            "ref": {
+              "id": "evidence:資料/α",
+              "revision": 1
+            },
+            "resourceRef": {
+              "id": "resource:資料/α",
+              "revision": 1
+            },
+            "providerRevision": "drive-revision-a",
+            "snapshot": {
+              "id": "snapshot:資料/α-1",
+              "retention": "retained",
+              "content": "日本語の資料 🌱\n第二行\n",
+              "mediaType": "text/plain",
+              "provenance": {
+                "status": "known",
+                "actor": "fixture operator",
+                "description": "Manually supplied fixture metadata; no live execution."
+              }
+            }
+          },
+          {
+            "ref": {
+              "id": "evidence:資料/α",
+              "revision": 2
+            },
+            "resourceRef": {
+              "id": "resource:資料/α",
+              "revision": 2
+            },
+            "providerRevision": null,
+            "snapshot": {
+              "id": "snapshot:資料/α-2",
+              "retention": "reference-only",
+              "content": null,
+              "mediaType": "text/plain",
+              "provenance": {
+                "status": "unknown",
+                "actor": null,
+                "description": "The source actor and processor-visible content are unknown."
+              }
+            }
+          }
+        ]
+      },
+      "processor": {
+        "status": "known",
+        "actor": "fixture operator",
+        "description": "Manually supplied fixture metadata; no live execution."
+      },
+      "status": "completed",
+      "failures": []
+    }
+  ],
+  "materials": [
+    {
+      "ref": {
+        "id": "material:準備",
+        "revision": 1
+      },
+      "producingRunId": "run-local-001",
+      "title": "準備資料 🌱",
+      "summary": "Local preparation from retained text and reference metadata.",
+      "sections": [
+        {
+          "title": "Retained source",
+          "text": "日本語の資料 🌱\n第二行\n",
+          "evidenceRefs": [
+            {
+              "id": "evidence:資料/α",
+              "revision": 1
+            }
+          ]
+        },
+        {
+          "title": "Reference metadata",
+          "text": "Version 2 is reference-only. Its content and actor are unknown.",
+          "evidenceRefs": [
+            {
+              "id": "evidence:資料/α",
+              "revision": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "proposals": [
+    {
+      "producerId": "textus-knowledge-lake",
+      "proposalId": "proposal-local-001",
+      "producingRunId": "run-local-001",
+      "materialRef": {
+        "id": "material:準備",
+        "revision": 1
+      },
+      "title": "Local raw proposal",
+      "summary": "Evidence-grounded local fixture proposal.",
+      "evidenceRefs": [
+        {
+          "id": "evidence:資料/α",
+          "revision": 1
+        },
+        {
+          "id": "evidence:資料/α",
+          "revision": 2
+        }
+      ]
+    }
+  ]
+}

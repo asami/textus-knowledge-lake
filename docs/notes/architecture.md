@@ -8,6 +8,12 @@ Google Workspace, Slack, Gmail, Web and future stores are providers/resources us
 
 The previous assumption that Google Workspace itself is the Knowledge Lake is superseded.
 
+### Phase 1 delivery boundary (2026-10-02)
+
+[Phase 1](../phase/phase-1.md) develops TKL entirely within this project. Resource/Evidence, Context/Run, PreparedMaterial, proposal export and TKL-side result handling are validated with local fixtures and an explicitly scoped local adapter. Other projects' builds, services, releases and contract acceptance are not closure dependencies. Live Drive storage/concurrency and downstream receipt/Admission guarantees remain external verification work.
+
+The application relationships below describe the full target architecture, not Phase 1 acceptance. Full feedback synchronization and downstream candidate lifecycle stay outside this Phase. The [integration register](phase-1-integration-register.md) manages requirements, owners and unresolved guarantees; closure supplies concrete versioned proposals. See [the user-directed boundary decision](../journal/2026-10-02-phase-1-project-local-boundary.md).
+
 ### Initial backend and processing contexts (2026-10-02)
 
 The first target is Google Workspace-backed TKL. Its persistent physical representation is a Drive folder or folder set, with Drive JSON as the initial system of record for TKL metadata and PreparedMaterial; a separate TKL DB is not required initially.
@@ -15,6 +21,14 @@ The first target is Google Workspace-backed TKL. Its persistent physical represe
 Drive Project and Gemini Notebook realize purpose-specific Knowledge Processing Contexts over that storage. A context selects Evidence and Existing Knowledge for preparation, analysis, synthesis or production. TKL records context identity, purpose, source versions, processing history and output lineage. Multiple contexts may reuse the same resources. Notebook is not restricted to presentation, and its implementation is not required for the first Drive Project slice.
 
 TKL hands Raw Candidates to TKW; TKW owns formation, editing, review, approval and Admission. TKL also prepares source material for existing TKW candidates. See [Google Workspace-backed TKL](google-workspace-backed-tkl.md) for the current persistence, context and handoff decisions.
+
+### Review follow-up: context, run and handoff (2026-10-02)
+
+KnowledgeProcessingContext owns persistent purpose, current evidence selection and zero or more externalContextBindings. ProcessingRun records one execution's fixed input and existing-knowledge snapshots, processor/actor, result and output lineage. Each generated PreparedMaterial version refers to its producing Run. Context changes must not rewrite historical Run inputs. Resource identity, provider revision and a retained content snapshot are distinct.
+
+A monotonically increasing JSON revision alone does not enforce optimistic concurrency: revision validation and the write require a verified concurrency guarantee. Content hashes may check integrity but do not replace semantic IDs or an unverified locking mechanism. Drive revision references do not by themselves guarantee permanent content retention; materialize or export inputs when required by retention policy. Record what is known about external processing without claiming invisible inputs are captured.
+
+RawCandidateProposal is distinct from a TKW Candidate. The handoff contract must bind a producer-scoped proposalId to the receipt and TKW Candidate, prevent duplicate candidate creation on identical retries, and reject conflicting payloads under the same key. CandidatePreparationRequest similarly correlates its requestId, existing TKW candidate, Run and returned material. These are required design contracts, not claims of implemented TKW APIs. See [the review follow-up journal](../journal/2026-10-02-google-workspace-backed-tkl-review-follow-up.md).
 
 ## Core pipeline
 

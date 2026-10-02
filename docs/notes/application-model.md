@@ -4,6 +4,12 @@
 - Status: Initial model
 - Scope: Application Use Cases + Phase 1 Application Workflow
 
+## Project-local Phase 1 authority (2026-10-02)
+
+[Phase 1](../phase/phase-1.md) is development confined to TKL. The complete application scenarios below retain external actors, while Phase 1 exercises their boundaries with repository-owned fixtures. No TKW/TEAI/KnowledgeHub/BoK service, external project build or contract acceptance is required. TKL does not replace downstream candidate persistence, review/approval or Admission. Local receipt/Candidate references are simulated results and prove only TKL-side handling.
+
+The [integration register](phase-1-integration-register.md) owns tracking and closing proposals. TKL closure supplies versioned contracts, examples, local evidence and recommended external work; it does not require external implementation. This section supersedes any stronger live-integration reading of the initial use-case draft below.
+
 ## Google Workspace backend and processing contexts (2026-10-02)
 
 The first implementation target is Google Workspace-backed TKL. Drive folders hold resources, canonical TKL metadata JSON and PreparedMaterial. Drive Project and Gemini Notebook are realizations of a provider-neutral Knowledge Processing Context, with purpose, source/version references, Existing Knowledge Context, processing history and output lineage. Contexts and storage folders are not fixed one-to-one.
@@ -11,6 +17,12 @@ The first implementation target is Google Workspace-backed TKL. Drive folders ho
 Notebook is available as a modeling option for preparation, analysis and synthesis as well as presentation. Drive Project remains the first implementation priority; Notebook integration is not required for the initial slice. Exact DTO/CML syntax and provider automation capabilities remain to be established.
 
 TKL proposes Raw Candidates to TKW and can prepare resources for an existing TKW candidate. TKW retains candidate formation, editing, review, approval and Admission. See [Google Workspace-backed TKL](google-workspace-backed-tkl.md) and [the decision journal](../journal/2026-10-02-google-workspace-backed-tkl-contexts.md).
+
+### Review follow-up: logical context versus execution
+
+KnowledgeProcessingContext is a persistent TKL entity with current evidence selection and externalContextBindings. ProcessingRun records one execution's fixed input and existing-knowledge snapshots, processor/actor, result, partial failure and output references. Context updates do not rewrite historical Runs. PreparedMaterial versions identify their producing Run; the input manifest and retained source content are distinct, with explicit retention and known/unknown provenance boundaries.
+
+RawCandidateProposal carries a producer-scoped proposalId and versioned material/evidence references. TKW receipt and its Candidate identity are recorded separately. Identical retries must return the same receipt/candidate mapping; conflicting content under the same key must not silently overwrite it. CandidatePreparationRequest uses requestId and tkwCandidateRef to correlate the requested preparation, Run and returned material. JSON revision checks require a verified write-concurrency guarantee. These contracts are to be specified with the persistence adapter and TKW. See [review follow-up decisions](../journal/2026-10-02-google-workspace-backed-tkl-review-follow-up.md).
 
 ## Modeling intent
 
@@ -20,7 +32,7 @@ TKL の Use Case と Workflow を分離して CML で扱う。
 - Application Capability: Use Case を実現するアプリケーション能力
 - Workflow: Capability を協調させて目的を遂行する実行モデル
 
-Phase 1 では全 Use Case を実装しない。Application Model として将来用途まで定義し、最初の Use Case Slice として Evidence から Raw Knowledge Candidate を提案し、Textus Knowledge Workbench へ引き渡す経路を end-to-end で実装する。
+Phase 1 では全 Use Case を実装しない。Application Model として将来用途まで定義し、最初の Use Case Slice として Evidence から Raw Knowledge Candidate を生成・export し、TKL 側の外部境界の結果処理までをローカルで実装・検証する。実 Workbench 接続はクローズ時の連携提案に含める。
 
 ## Actors
 
@@ -147,6 +159,15 @@ Normalize Evidence
   +--> Communication VO for Gmail / Slack
   |
   v
+Create / Resolve KnowledgeProcessingContext
+  |
+  v
+Bind External Processing Context
+  |
+  v
+Create ProcessingRun / Capture Input and Existing Knowledge Snapshots
+  |
+  v
 Prepare Knowledge Material
   |
   v
@@ -162,7 +183,10 @@ Compose Raw Candidate Proposal
 Present Candidate + Evidence
   |
   v
-Deliver to Textus Knowledge Workbench
+Export Proposal to Local Workbench Boundary Fixture
+  |
+  v
+Record TKL Result / Simulated Receipt Correspondence
   |
   v
 End
@@ -170,13 +194,13 @@ End
 
 ## Phase 1 Use Case Slice
 
-The first implementation slice closes UC-KA-01 with deterministic fixtures before full provider automation.
+The first implementation slice uses project-local fixtures representing a small Drive source set and manually supplied preparation results. The full application target permits manually assisted Drive Project processing. Phase 1 validates TKL behavior independently of provider automation and downstream services; Gmail / Slack, KAR packaging, live feedback and existing-candidate preparation remain follow-on scope.
 
 Given:
 
-- Drive-like file Evidence
-- Gmail-like Communication Evidence
-- Slack-like Communication Evidence
+- a small set of local Drive-shaped Evidence fixtures;
+- versioned Existing Knowledge Context fixture where relevant;
+- a TKL processing context with Drive Project binding metadata.
 
 When:
 
@@ -185,14 +209,15 @@ When:
 Then:
 
 - provider resources are represented by stable TKL resource IDs;
-- communication data is normalized into common Communication VOs;
+- the ProcessingRun records its fixed input references, retention status and Existing Knowledge snapshot;
 - a PreparedMaterial Entity is created and persisted;
 - PreparedMaterial can be exported losslessly as JSON;
 - Markdown can be rendered from the canonical model without re-reading sources;
-- an attachment-bearing PreparedMaterial can be exported as KAR;
 - at least one Raw Knowledge Candidate Proposal is generated;
 - the Proposal includes provenance to its Evidence and PreparedMaterial;
-- the Raw Candidate can cross the Textus Knowledge Workbench boundary;
+- the RawCandidateProposal is exportable at the proposed Workbench boundary;
+- supplied fixture receipts / Candidate references are correlated and recorded by TKL; timeout remains unknown and query/retry preserves the same proposal identity;
+- downstream receipt durability and duplicate Candidate prevention are documented TKW requirements, not guarantees proven by this local slice;
 - Candidate formation/review/approval is explicitly outside TKL Phase 1.
 
 ## Provider mapping for the NICT pilot

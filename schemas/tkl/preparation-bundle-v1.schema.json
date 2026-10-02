@@ -1,0 +1,616 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tkl:preparation-bundle:v1",
+  "title": "TKL preparation bundle v1",
+  "description": "Structural contract. Scala validation additionally enforces uniqueness, selections and cross-record lineage.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "tkl.preparation-bundle.v1"
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Resource"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Evidence"
+      }
+    },
+    "contexts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/KnowledgeProcessingContext"
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ProcessingRun"
+      }
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PreparedMaterial"
+      }
+    },
+    "proposals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RawCandidateProposal"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "resources",
+    "evidence",
+    "contexts",
+    "runs",
+    "materials",
+    "proposals"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "VersionedRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "id",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "ProviderLocation": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "externalId": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "uri": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "provider",
+        "externalId",
+        "uri"
+      ],
+      "additionalProperties": false
+    },
+    "Provenance": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "known",
+            "unknown"
+          ]
+        },
+        "actor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "description": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "status",
+        "actor",
+        "description"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "known"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "actor": {
+                "type": "string",
+                "pattern": "\\S"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "actor": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "InputSnapshot": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "retention": {
+          "enum": [
+            "retained",
+            "reference-only"
+          ]
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mediaType": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "id",
+        "retention",
+        "content",
+        "mediaType",
+        "provenance"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "retention": {
+                "const": "retained"
+              }
+            },
+            "required": [
+              "retention"
+            ]
+          },
+          "then": {
+            "properties": {
+              "content": {
+                "type": "string"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "content": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Resource": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/VersionedRef"
+        },
+        "kind": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "title": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "location": {
+          "$ref": "#/$defs/ProviderLocation"
+        }
+      },
+      "required": [
+        "ref",
+        "kind",
+        "title",
+        "location"
+      ],
+      "additionalProperties": false
+    },
+    "Evidence": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/VersionedRef"
+        },
+        "resourceRef": {
+          "$ref": "#/$defs/VersionedRef"
+        },
+        "providerRevision": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot": {
+          "$ref": "#/$defs/InputSnapshot"
+        }
+      },
+      "required": [
+        "ref",
+        "resourceRef",
+        "providerRevision",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    "ExternalContextBinding": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "kind": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "provider": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "externalId": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "provider",
+        "externalId"
+      ],
+      "additionalProperties": false
+    },
+    "ExistingInformation": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/VersionedRef"
+        },
+        "source": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "title": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/InputSnapshot"
+        }
+      },
+      "required": [
+        "ref",
+        "source",
+        "title",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    "KnowledgeProcessingContext": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/VersionedRef"
+        },
+        "title": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VersionedRef"
+          }
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExternalContextBinding"
+          }
+        },
+        "existingInformation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExistingInformation"
+          }
+        }
+      },
+      "required": [
+        "ref",
+        "title",
+        "evidenceRefs",
+        "bindings",
+        "existingInformation"
+      ],
+      "additionalProperties": false
+    },
+    "RunInput": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "context": {
+          "$ref": "#/$defs/KnowledgeProcessingContext"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Resource"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "context",
+        "resources",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "ProcessingFailure": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "message": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "evidenceRef": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VersionedRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "evidenceRef"
+      ],
+      "additionalProperties": false
+    },
+    "ProcessingRun": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "input": {
+          "$ref": "#/$defs/RunInput"
+        },
+        "processor": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "partial",
+            "failed"
+          ]
+        },
+        "failures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProcessingFailure"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "input",
+        "processor",
+        "status",
+        "failures"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "failures": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "failures": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MaterialSection": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "text": {
+          "type": "string"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VersionedRef"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "title",
+        "text",
+        "evidenceRefs"
+      ],
+      "additionalProperties": false
+    },
+    "PreparedMaterial": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/VersionedRef"
+        },
+        "producingRunId": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "title": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "summary": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MaterialSection"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "ref",
+        "producingRunId",
+        "title",
+        "summary",
+        "sections"
+      ],
+      "additionalProperties": false
+    },
+    "RawCandidateProposal": {
+      "type": "object",
+      "properties": {
+        "producerId": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "proposalId": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "producingRunId": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "materialRef": {
+          "$ref": "#/$defs/VersionedRef"
+        },
+        "title": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "summary": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VersionedRef"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "producerId",
+        "proposalId",
+        "producingRunId",
+        "materialRef",
+        "title",
+        "summary",
+        "evidenceRefs"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

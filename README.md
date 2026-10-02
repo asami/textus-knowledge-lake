@@ -1,171 +1,73 @@
 # Textus Knowledge Lake (TKL)
 
-Textus Knowledge Lake is the **Knowledge Ingestion Application** that brings knowledge candidates, primarily prepared in an external Knowledge Lake, into the Textus World.
+Textus Knowledge Lake manages provider-neutral resources, evidence, knowledge-processing contexts, preparation and traceable candidate proposals. **TKL itself is the Knowledge Lake.** Google Workspace is its first production backend target.
 
-The initial Knowledge Lake is Google Workspace. Raw and working materials remain there, and NotebookLM, Workspace AI, and humans perform primary knowledge processing. TKL begins at the boundary where those results become **Knowledge Candidates** for Textus.
-
-## Core definition
-
-> TKL imports knowledge candidates that have received primary processing in a Knowledge Lake into the Textus World.
-
-TKL is therefore not intended to reproduce NotebookLM or to ingest every raw file merely because it exists in Google Workspace.
-
-```text
-              Google Workspace
-               Knowledge Lake
-                     |
-        +------------+-------------+
-        |                          |
-   Raw Materials              NotebookLM /
- PDF / Sheets / Docs          Workspace AI /
- Mail / Images / ...          Human analysis
-        |                          |
-        +---- source/provenance ---+
-                                   |
-                           Knowledge Candidate
-                                   |
-                                  TEAI
-                                   |
-                                   v
-                     textus-knowledge-lake
-                       Knowledge Ingestion
-                                   |
-                            Textus World
-                           /            \
-                    Information       Knowledge
-                           \            /
-                            KnowledgeHub
-                                 |
-                                BoK
-```
+Drive folders hold source/working artifacts and canonical TKL metadata JSON / PreparedMaterial. KnowledgeProcessingContext describes a persistent purpose and selected evidence; Drive Project and Gemini Notebook are possible external realizations. ProcessingRun records one execution and its fixed inputs, results and lineage. The exact Notebook product/API is an adapter-design question.
 
 ## Responsibility boundaries
 
-- **Google Workspace / Knowledge Lake** — stores source and working materials and supports primary knowledge processing.
-- **NotebookLM / Workspace AI / humans** — read, compare, summarize, investigate, discuss, and prepare Knowledge Candidates.
-- **OpenClaw** — performs physical/tool-mediated access to Google Workspace and other external SaaS environments where agent-mediated integration is appropriate.
-- **TEAI** — owns the enterprise integration boundary: endpoints, events/data transport, integration bindings, authentication/policy boundary, delivery/retry, Job/Workflow initiation, correlation and continuation.
-- **TKL** — validates and interprets Knowledge Candidates, normalizes provenance, resolves identity, maps them to Textus concepts, and ingests them into the Textus World.
-- **KnowledgeHub** — represents, links, processes and retrieves Textus knowledge.
-- **BoK** — publishes curated knowledge products.
+| Owner | Responsibility |
+| --- | --- |
+| TKL | Resource / Evidence identity, Context / Run, preparation, PreparedMaterial, provenance, RawCandidateProposal and existing-information projections |
+| Google Workspace / other providers | Physical resource representations and external processing facilities |
+| TKW | Candidate identity, formation, editing, review, human approval and Admission requests |
+| KnowledgeHub | Canonical Information and its versions |
+| TEAI / OpenClaw | Enterprise integration and physical/tool-mediated access where used |
+| BoK | Curated knowledge publication |
 
-## Knowledge Candidate
-
-The central input concept of TKL is `KnowledgeCandidate`, not raw `Material`.
-
-A candidate may contain or reference:
-
-- content/summary;
-- claims;
-- concepts/entities;
-- source references and citations;
-- context;
-- provenance;
-- processing history;
-- human notes/review;
-- generation/processing agent information.
-
-The exact DTO/model will be refined with TEAI and KnowledgeHub.
-
-## Source material
-
-Original materials do not necessarily need to be copied into Textus.
-
-TKL can retain provider-neutral external references such as:
+RawCandidateProposal is a TKL proposal, separate from a TKW Candidate. TKL does not directly review/approve or admit a Candidate into KnowledgeHub.
 
 ```text
-ExternalMaterialReference
-  provider
-  resourceId
-  version
-  checksum
-  capturedAt
+Provider resources
+  -> TKL Resource / Evidence
+  -> KnowledgeProcessingContext / ProcessingRun
+  -> PreparedMaterial(version)
+  -> RawCandidateProposal
+  -> TKW formation / edit / review / approval
+  -> KnowledgeHub Information
+  -> TKL existing-information projection for later preparation
 ```
 
-Knowledge imported into Textus must remain traceable to its source material and processing provenance.
+This diagram describes the eventual application relationship. Actual external integration is distinct from the project-local Phase 1 acceptance described below.
 
-## Ingestion flow
+## First backend and processing contexts
+
+The first production target uses a Drive folder or folder set. Small independent JSON records represent TKL entities; a separate TKL database is not mandatory initially. Stable TKL IDs, entity revisions, provider revisions and retained input snapshot identities have different meanings.
+
+Drive Project is the first external processing-context target. Manual processing and import of preparation results are supported design paths. Gemini Notebook is an optional context for preparation, analysis, synthesis and production, with concrete capabilities to be verified during integration.
+
+Source resources are referenced by default. Retain/materialize required input content according to policy; a provider revision reference alone does not prove permanent content availability. Record unretained or unconfirmed inputs explicitly.
+
+JSON is the lossless representation of PreparedMaterial. Markdown is a derived projection for people and LLMs. Historical Run inputs and material versions remain stable when the current Context changes.
+
+## Phase 1: project-local development
+
+[Phase 1](docs/phase/phase-1.md) implements and validates the TKL-owned preparation/proposal path using repository-owned fixtures and executable specifications:
 
 ```text
-KnowledgeCandidate
-       |
-       v
-      TEAI
-       |
-       v
-      TKL
-       |
-       +-- validate
-       +-- normalize provenance/context
-       +-- resolve identity
-       +-- map ontology/facets
-       +-- map Information / Knowledge
-       +-- link existing knowledge
-       +-- ingest
-       |
-       v
-   Textus World
+Small Drive-shaped source fixtures
+  -> Resource / Evidence -> Context / fixed-input Run
+  -> preparation-result import -> persisted PreparedMaterial
+  -> JSON / Markdown -> RawCandidateProposal export
+  -> local boundary fixture for TKL result/correlation handling
 ```
 
-Raw acquisition, broad summarization, exploratory comparison and source-set Q&A should normally happen on the Knowledge Lake side before this boundary.
+Closure requires TKL-local behavior, reproducible local validation, accurate documentation, independent review and concrete external integration proposals. It does not require another project's build, service, release or contract acceptance, live Google credentials, TKW Candidate creation, KnowledgeHub Admission or a BoK publication decision.
 
-## Provider independence
+A simulated receipt / Candidate reference proves TKL-side handling only. Durable downstream receipt, concurrent duplicate prevention and production Admission remain requirements for their owners. TKL does not implement a substitute downstream service.
 
-Google Workspace + NotebookLM is the first reference environment, not a hard dependency. Future enterprise lakes and knowledge-processing environments can produce the same provider-neutral Knowledge Candidate contract.
+The [acceptance checklist](docs/phase/phase-1-checklist.md) records pending delivery. Current CML is a scaffold; documentation and proposed contracts do not imply implemented behavior.
 
-## Initial reference scenario
+## Integration management
 
-Phase 1 validates:
+The [integration register](docs/notes/phase-1-integration-register.md) tracks owner, contract/version, TKL evidence, external unverified guarantees, open questions and follow-up work for each boundary. Phase closure produces a proposal package in this repository with sample payloads/fixtures, acceptance examples and recommended receiving-project work.
 
-```text
-Google Workspace
-   -> NotebookLM / human primary processing
-   -> Knowledge Candidate
-   -> OpenClaw (physical/tool-mediated access)
-   -> TEAI
-   -> TKL
-   -> KnowledgeHub / Textus World
-   -> BoK
-```
+Provider adapters map the semantic model onto external capabilities. TEAI/OpenClaw may perform transport, invocation/delegation and continuation where appropriate; these mechanisms do not redefine the TKL domain model. No provider-specific physical integration or shared infrastructure is invented to bypass a missing upstream capability.
 
-The primary architectural question is no longer how TKL processes raw Drive files. It is how a traceable, context-rich Knowledge Candidate crosses the Knowledge Lake/Textus boundary correctly.
+## Design records
 
-## Physical integration boundary
-
-TKL must not contain Google Workspace API, OAuth, Drive/Docs access, NotebookLM retrieval, or other provider-specific physical integration logic.
-
-For the Google Workspace reference architecture:
-
-```text
-Google Workspace / NotebookLM
-          |
-     physical access
-          v
-       OpenClaw
-          |
-          v
-         TEAI
-  enterprise integration
-          |
-          v
-         TKL
-  semantic ingestion
-```
-
-More precisely, **physical integration is a TEAI responsibility**, and TEAI delegates agent/tool-mediated SaaS access to OpenClaw. Direct deterministic integrations may bypass OpenClaw and use a TEAI endpoint directly.
-
-TKL should see provider-neutral application input such as `KnowledgeCandidateReceived(candidate, sources, provenance, context)`; it should not need to know which Google API, OAuth flow, tool, or agent obtained that data.
-
-## Bidirectional use of OpenClaw through TEAI
-
-The Knowledge Lake flow is not ingress-only. During a TKL ingestion workflow, TKL may use TEAI to invoke or delegate external work through OpenClaw.
-
-```text
-TKL Workflow -> TEAI -> OpenClaw -> Google Workspace / tools / AI
-                              |
-                       result/continuation
-                              v
-                         TEAI -> TKL
-```
-
-A concrete resource retrieval is an **INVOCATION**; an open-ended request such as investigating related project material is a **DELEGATION**, completed through **CONTINUATION**. TKL remains provider-neutral in both cases.
+- [Project-local Phase 1 decision](docs/journal/2026-10-02-phase-1-project-local-boundary.md)
+- [Google Workspace backend and contexts](docs/notes/google-workspace-backed-tkl.md)
+- [Architecture](docs/notes/architecture.md)
+- [Application model](docs/notes/application-model.md)
+- [Review follow-up](docs/journal/2026-10-02-google-workspace-backed-tkl-review-follow-up.md)
