@@ -120,6 +120,77 @@ class PreparationJsonSpec extends AnyWordSpec with GivenWhenThen with Matchers:
       result shouldBe original
     }
 
+    val revisionpaths = Vector(
+      Vector("resources", "0", "ref"),
+      Vector("evidence", "0", "ref"),
+      Vector("evidence", "0", "resourceRef"),
+      Vector("contexts", "0", "ref"),
+      Vector("contexts", "0", "evidenceRefs", "0"),
+      Vector("contexts", "0", "existingInformation", "0", "ref"),
+      Vector("runs", "0", "input", "context", "ref"),
+      Vector("runs", "0", "input", "resources", "0", "ref"),
+      Vector("runs", "0", "input", "evidence", "0", "ref"),
+      Vector("materials", "0", "ref"),
+      Vector("materials", "0", "sections", "0", "evidenceRefs", "0"),
+      Vector("proposals", "0", "materialRef"),
+      Vector("proposals", "0", "evidenceRefs", "0")
+    )
+    revisionpaths.foreach { path =>
+      s"reject matching revision strings as JSON type errors at ${path.mkString(".")}" in {
+        Given("a valid canonical fixture with one current or embedded numeric revision replaced by its matching string")
+        val fixture = parse(_fixture_text()).toOption.get
+        PreparationJson.decode(fixture.noSpaces).isRight shouldBe true
+        val invalid = _edit(fixture, path :+ "revision", value => Json.fromString(value.asNumber.get.toLong.get.toString))
+        When("the public canonical decoder receives the structurally mutated fixture")
+        val result = PreparationJson.decode(invalid.noSpaces)
+        Then("the wire type is rejected before model reference or lineage validation")
+        result.isLeft shouldBe true
+        result.swap.toOption.get.map(_.code) should contain("json-decode")
+      }
+    }
+
+    val invalidrevisions = Vector(
+      "numeric string" -> Json.fromString("1"),
+      "null" -> Json.Null,
+      "boolean" -> Json.True,
+      "array" -> Json.arr(),
+      "object" -> Json.obj(),
+      "fraction" -> Json.fromBigDecimal(BigDecimal("1.5")),
+      "above Long range" -> Json.fromBigInt(BigInt(Long.MaxValue) + 1),
+      "below Long range" -> Json.fromBigInt(BigInt(Long.MinValue) - 1)
+    )
+    invalidrevisions.foreach { (label, value) =>
+      s"reject $label as a canonical revision JSON decoding error" in {
+        Given(s"the canonical fixture with a Resource revision independently replaced by $label")
+        val fixture = parse(_fixture_text()).toOption.get
+        val invalid = _edit(fixture, Vector("resources", "0", "ref", "revision"), _ => value)
+        When("the public canonical decoder receives the wrong type or numeric range")
+        val result = PreparationJson.decode(invalid.noSpaces)
+        Then("a structured json-decode error rejects the revision")
+        result.isLeft shouldBe true
+        result.swap.toOption.get.map(_.code) should contain("json-decode")
+      }
+    }
+
+    "preserve integral numeric spelling and the maximum Long revision exactly" in {
+      Given("the valid fixture with revision one spelled 1.0 or 1e0 and a minimal Resource bundle at Long.MaxValue")
+      val fixture = parse(_fixture_text()).toOption.get
+      val original = PreparationJson.decode(fixture.noSpaces).toOption.get
+      val variants = Vector("1.0", "1e0").map(spelling =>
+        _edit(fixture, Vector("resources", "0", "ref", "revision"), _ => parse(spelling).toOption.get))
+      val maximum = original.copy(
+        resources = Vector(original.resources.head.copy(ref = original.resources.head.ref.copy(revision = Long.MaxValue))),
+        evidence = Vector.empty, contexts = Vector.empty, runs = Vector.empty, materials = Vector.empty, proposals = Vector.empty
+      )
+      When("the integral numeric variants are decoded and the maximum-revision bundle is encoded and decoded")
+      val results = variants.map(json => PreparationJson.decode(json.noSpaces))
+      val roundtrip = PreparationJson.encode(maximum).flatMap(PreparationJson.decode)
+      Then("integral spellings retain the exact original model and Long.MaxValue roundtrips without wrapping")
+      all(results) shouldBe Right(original)
+      roundtrip shouldBe Right(maximum)
+      roundtrip.toOption.get.resources.head.ref.revision shouldBe Long.MaxValue
+    }
+
     val objectpaths = Vector(
       Vector.empty[String],
       Vector("resources", "0"),

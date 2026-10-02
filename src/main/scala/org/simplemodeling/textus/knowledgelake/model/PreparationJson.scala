@@ -27,6 +27,10 @@ object PreparationJson:
         else decoder(cursor)
   }
 
+  private given _long_decoder: Decoder[Long] = Decoder.instance { cursor =>
+    cursor.value.asNumber.flatMap(_.toLong).toRight(DecodingFailure("Expected JSON integer within Long range", cursor.history))
+  }
+
   private given _provenance_status_encoder: Encoder[ProvenanceStatus] = Encoder.encodeString.contramap {
     case ProvenanceStatus.Known => "known"
     case ProvenanceStatus.Unknown => "unknown"

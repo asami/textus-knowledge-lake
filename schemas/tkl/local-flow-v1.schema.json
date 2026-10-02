@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tkl:local-flow:v1",
+  "title": "TKL proposed local flow v1",
+  "description": "Structural local envelopes. Scala additionally validates exact lineage, immutable history, producer-scoped payload, correlation and attempt lifecycle. Fixture observations prove no external guarantees.",
+  "oneOf": [
+    { "$ref": "#/$defs/LocalState" },
+    { "$ref": "#/$defs/ProposalRequest" },
+    { "$ref": "#/$defs/ProposalObservation" },
+    { "$ref": "#/$defs/LocalFlowFixture" },
+    { "$ref": "#/$defs/LocalFlowReport" }
+  ],
+  "$defs": {
+    "Metadata": { "type": "string", "pattern": "\\S" },
+    "Revision": { "type": "integer", "minimum": 1, "maximum": 9223372036854775807 },
+    "VersionedRef": {
+      "allOf": [
+        { "$ref": "urn:tkl:preparation-bundle:v1#/$defs/VersionedRef" },
+        { "properties": { "revision": { "$ref": "#/$defs/Revision" } } }
+      ]
+    },
+    "Operation": { "enum": ["submit", "query"] },
+    "Outcome": { "enum": ["confirmed", "rejected", "conflict", "unknown"] },
+    "RawCandidateProposal": {
+      "allOf": [
+        { "$ref": "urn:tkl:preparation-bundle:v1#/$defs/RawCandidateProposal" },
+        {
+          "properties": {
+            "materialRef": { "$ref": "#/$defs/VersionedRef" },
+            "evidenceRefs": { "items": { "$ref": "#/$defs/VersionedRef" } }
+          }
+        }
+      ]
+    },
+    "MaterialSection": {
+      "allOf": [
+        { "$ref": "urn:tkl:preparation-bundle:v1#/$defs/MaterialSection" },
+        { "properties": { "evidenceRefs": { "items": { "$ref": "#/$defs/VersionedRef" } } } }
+      ]
+    },
+    "ProcessingFailure": {
+      "allOf": [
+        { "$ref": "urn:tkl:preparation-bundle:v1#/$defs/ProcessingFailure" },
+        { "properties": { "evidenceRef": { "anyOf": [ { "$ref": "#/$defs/VersionedRef" }, { "type": "null" } ] } } }
+      ]
+    },
+    "PreparationBundle": { "$ref": "urn:tkl:preparation-bundle:v1" },
+    "LocalState": {
+      "type": "object",
+      "properties": {
+        "schema": { "const": "tkl.local-state.v1" },
+        "revision": { "$ref": "#/$defs/Revision" },
+        "bundle": { "$ref": "#/$defs/PreparationBundle" },
+        "deliveries": { "type": "array", "items": { "$ref": "#/$defs/DeliveryAttempt" } }
+      },
+      "required": ["schema", "revision", "bundle", "deliveries"],
+      "additionalProperties": false
+    },
+    "ProposalRequest": {
+      "type": "object",
+      "properties": {
+        "schema": { "const": "tkl.proposal-request.v1" },
+        "correlationId": { "$ref": "#/$defs/Metadata" },
+        "operation": { "$ref": "#/$defs/Operation" },
+        "proposal": { "$ref": "#/$defs/RawCandidateProposal" }
+      },
+      "required": ["schema", "correlationId", "operation", "proposal"],
+      "additionalProperties": false
+    },
+    "ProposalObservation": {
+      "type": "object",
+      "properties": {
+        "schema": { "const": "tkl.proposal-observation.v1" },
+        "correlationId": { "$ref": "#/$defs/Metadata" },
+        "producerId": { "$ref": "#/$defs/Metadata" },
+        "proposalId": { "$ref": "#/$defs/Metadata" },
+        "outcome": { "$ref": "#/$defs/Outcome" },
+        "receiptId": { "anyOf": [ { "$ref": "#/$defs/Metadata" }, { "type": "null" } ] },
+        "candidateRef": { "anyOf": [ { "$ref": "#/$defs/VersionedRef" }, { "type": "null" } ] },
+        "message": { "$ref": "#/$defs/Metadata" }
+      },
+      "required": ["schema", "correlationId", "producerId", "proposalId", "outcome", "receiptId", "candidateRef", "message"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "outcome": { "const": "confirmed" } }, "required": ["outcome"] },
+          "then": { "properties": { "receiptId": { "$ref": "#/$defs/Metadata" }, "candidateRef": { "$ref": "#/$defs/VersionedRef" } } },
+          "else": { "properties": { "receiptId": { "type": "null" }, "candidateRef": { "type": "null" } } }
+        }
+      ]
+    },
+    "DeliveryAttempt": {
+      "type": "object",
+      "properties": {
+        "request": { "$ref": "#/$defs/ProposalRequest" },
+        "observation": { "anyOf": [ { "$ref": "#/$defs/ProposalObservation" }, { "type": "null" } ] }
+      },
+      "required": ["request", "observation"],
+      "additionalProperties": false
+    },
+    "MaterialDraft": {
+      "type": "object",
+      "properties": {
+        "ref": { "$ref": "#/$defs/VersionedRef" },
+        "title": { "$ref": "#/$defs/Metadata" },
+        "summary": { "$ref": "#/$defs/Metadata" },
+        "sections": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/MaterialSection" } }
+      },
+      "required": ["ref", "title", "summary", "sections"],
+      "additionalProperties": false
+    },
+    "PreparationResult": {
+      "type": "object",
+      "properties": {
+        "processor": { "$ref": "urn:tkl:preparation-bundle:v1#/$defs/Provenance" },
+        "status": { "enum": ["completed", "partial", "failed"] },
+        "failures": { "type": "array", "items": { "$ref": "#/$defs/ProcessingFailure" } },
+        "material": { "anyOf": [ { "$ref": "#/$defs/MaterialDraft" }, { "type": "null" } ] }
+      },
+      "required": ["processor", "status", "failures", "material"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "completed" } }, "required": ["status"] },
+          "then": { "properties": { "failures": { "maxItems": 0 } } },
+          "else": { "properties": { "failures": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "status": { "const": "failed" } }, "required": ["status"] },
+          "then": { "properties": { "material": { "type": "null" } } }
+        }
+      ]
+    },
+    "PreparationCommand": {
+      "type": "object",
+      "properties": {
+        "contextRef": { "$ref": "#/$defs/VersionedRef" },
+        "inputId": { "$ref": "#/$defs/Metadata" },
+        "runId": { "$ref": "#/$defs/Metadata" },
+        "result": { "$ref": "#/$defs/PreparationResult" }
+      },
+      "required": ["contextRef", "inputId", "runId", "result"],
+      "additionalProperties": false
+    },
+    "ProposalCommand": {
+      "type": "object",
+      "properties": {
+        "producerId": { "$ref": "#/$defs/Metadata" },
+        "proposalId": { "$ref": "#/$defs/Metadata" },
+        "materialRef": { "$ref": "#/$defs/VersionedRef" }
+      },
+      "required": ["producerId", "proposalId", "materialRef"],
+      "additionalProperties": false
+    },
+    "FixtureDelivery": {
+      "type": "object",
+      "properties": {
+        "correlationId": { "$ref": "#/$defs/Metadata" },
+        "operation": { "$ref": "#/$defs/Operation" },
+        "observation": { "$ref": "#/$defs/ProposalObservation" }
+      },
+      "required": ["correlationId", "operation", "observation"],
+      "additionalProperties": false
+    },
+    "LocalFlowFixture": {
+      "type": "object",
+      "properties": {
+        "schema": { "const": "tkl.local-flow-fixture.v1" },
+        "initial": { "$ref": "#/$defs/PreparationBundle" },
+        "preparation": { "$ref": "#/$defs/PreparationCommand" },
+        "proposal": { "$ref": "#/$defs/ProposalCommand" },
+        "deliveries": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/FixtureDelivery" } }
+      },
+      "required": ["schema", "initial", "preparation", "proposal", "deliveries"],
+      "additionalProperties": false
+    },
+    "ProposalKey": {
+      "type": "object",
+      "properties": { "producerId": { "$ref": "#/$defs/Metadata" }, "proposalId": { "$ref": "#/$defs/Metadata" } },
+      "required": ["producerId", "proposalId"],
+      "additionalProperties": false
+    },
+    "LocalFlowReport": {
+      "type": "object",
+      "properties": {
+        "schema": { "const": "tkl.local-flow-report.v1" },
+        "storeRevision": { "$ref": "#/$defs/Revision" },
+        "runId": { "$ref": "#/$defs/Metadata" },
+        "materialRef": { "$ref": "#/$defs/VersionedRef" },
+        "proposal": { "$ref": "#/$defs/ProposalKey" },
+        "outcomes": { "type": "array", "items": { "$ref": "#/$defs/Outcome" } },
+        "bundlePath": { "$ref": "#/$defs/Metadata" },
+        "markdownPath": { "$ref": "#/$defs/Metadata" },
+        "requestPath": { "$ref": "#/$defs/Metadata" },
+        "assurance": { "const": "fixture-only; external guarantees unverified" }
+      },
+      "required": ["schema", "storeRevision", "runId", "materialRef", "proposal", "outcomes", "bundlePath", "markdownPath", "requestPath", "assurance"],
+      "additionalProperties": false
+    }
+  }
+}
