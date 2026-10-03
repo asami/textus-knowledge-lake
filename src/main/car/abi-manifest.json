@@ -1,0 +1,85 @@
+{
+  "format": "cozy.car.abi-manifest.v2",
+  "component": {
+    "namespace": "org.simplemodeling.textus",
+    "id": "KnowledgeLake",
+    "version": "0.1.0-SNAPSHOT"
+  },
+  "abi": {
+    "version": 1,
+    "exports": {
+      "components": [
+        {
+          "namespace": "org.simplemodeling.textus",
+          "id": "KnowledgeLake"
+        }
+      ],
+      "services": [
+        {
+          "name": "LocalPreparationService"
+        }
+      ],
+      "operations": [
+        {
+          "service": "LocalPreparationService",
+          "name": "executeFixture",
+          "kind": "COMMAND",
+          "input": "FixtureExecutionCommand",
+          "output": "FixtureExecutionResult"
+        }
+      ],
+      "types": [
+        {
+          "name": "FixtureExecutionCommand",
+          "kind": "value",
+          "fields": [
+            {
+              "name": "fixturePath",
+              "type": "string",
+              "multiplicity": "1",
+              "required": true
+            },
+            {
+              "name": "storeDirectory",
+              "type": "string",
+              "multiplicity": "1",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "FixtureExecutionResult",
+          "kind": "value",
+          "fields": [
+            {
+              "name": "reportJson",
+              "type": "string",
+              "multiplicity": "1",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "name": "LocalPreparationSession",
+          "fields": [
+            {
+              "name": "id",
+              "type": "entityid",
+              "multiplicity": "1",
+              "required": true
+            },
+            {
+              "name": "status",
+              "type": "int",
+              "multiplicity": "1",
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    "dependencies": []
+  }
+}

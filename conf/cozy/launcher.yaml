@@ -1,0 +1,8 @@
+development:
+  enabled: false
+  launcher:
+    enabled: false
+  runtime:
+    enabled: false
+runtime:
+  version: "0.3.2.2"

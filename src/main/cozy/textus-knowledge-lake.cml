@@ -1,113 +1,931 @@
-# Textus Knowledge Lake CML Model
+# COMPONENT
 
-> NOTE FOR CODEX
->
-> This file is the canonical CML source location for the TKL application model.
-> Replace this scaffold with valid current CML syntax after checking the CML/Cozy implementation and existing examples.
-> Do not invent unsupported CML syntax.
->
-> Design source:
-> - docs/notes/application-model.md
-> - docs/notes/architecture.md
-> - docs/phase/phase-1.md
-> - docs/journal/2026-10-02-phase-1-project-local-boundary.md
-> - docs/journal/2026-09-23-tkl-core-architecture-consolidation.md
->
-> Modeling intent:
-> - Model application-level Use Cases separately from execution Workflows.
-> - Keep future TKL Use Cases in the application model even when they are outside Phase 1.
-> - Phase 1 primary Use Case is "Propose Raw Knowledge Candidate".
-> - Phase 1 is project-local: implement TKL preparation/proposal and validate its boundary with local fixtures.
-> - Actual TKW receipt, KnowledgeHub Admission, TEAI transport and BoK publication are external follow-up proposals.
-> - Manage integration requirements and deliver concrete owner proposals at Phase closure.
-> - Derive/associate Application Capabilities where supported by current CML.
-> - Use current CML concepts for Use Case Slice / executable specification only if they are actually supported.
->
-> Primary application areas:
-> 1. Knowledge Acquisition
->    - Propose Raw Knowledge Candidate [Phase 1 primary]
->    - Explore Candidates by Theme
->    - Discover Candidates from New Evidence
->    - Inspect Candidate Evidence
->    - Prepare Against Existing Knowledge Context
->    - Deliver Raw Candidate Proposal [TKL side; local boundary fixture in Phase 1]
->    - Candidate editing/review/approval/Admission belong to TKW.
-> 2. Research / Exploration
-> 3. Project Awareness
-> 4. Content Production
->
-> Phase 1 workflow outline:
-> Determine Knowledgeization Scope
-> -> Resolve Knowledge Resources
-> -> Collect Evidence
-> -> Normalize Evidence
-> -> Create / Resolve KnowledgeProcessingContext
-> -> Record External Context Binding
-> -> Create ProcessingRun / Fix Input and Existing Information Snapshots
-> -> Prepare Knowledge Material
-> -> Persist PreparedMaterial
-> -> Extract Raw Knowledge Candidate
-> -> Compose Candidate Proposal
-> -> Present Proposal and Evidence
-> -> Export Proposal / Record TKL Boundary Result and Correspondence
-> -> Emit External Integration Proposals at Phase Closure
->
-> Use repository-owned source/result fixtures, local persistence and simulated boundary results for Phase 1.
-> A fixture receipt does not establish TKW deduplication, human approval or actual Admission.
-> Do not introduce another project's build/service as a closure dependency or implement its replacement locally.
->
-> Important domain concepts to align with the model:
-> - KnowledgeResource / provider-independent resource identity
-> - Evidence
-> - KnowledgeProcessingContext / externalContextBindings
-> - ProcessingRun / fixed input manifest and retained-content status
-> - Communication Value Objects
-> - PreparedMaterial Entity
-> - RawCandidateProposal / producer-scoped proposalId
-> - Provenance / Lineage
-> - TKL proposal/result correlation boundary
->
-> Provider-specific Google Workspace / Slack details are implementation mappings,
-> not the semantic core of this CML model.
->
-> TODO(Codex):
-> - Inspect current CML grammar/model support and representative src/main/cozy/*.cml examples.
-> - Convert docs/notes/application-model.md into valid CML.
-> - Preserve the Use Case vs Workflow distinction.
-> - Keep Phase 1 scope explicit.
-> - Validate/generate with the repository's current Cozy/CML tooling.
+## KnowledgeLake
 
+### SUMMARY
 
-> KNOWLEDGE FEEDBACK NOTE FOR CODEX
->
-> Add Knowledge Feedback as a first-class application-use-case group in the native CML model where supported:
-> - Synchronize Knowledge Context
-> - Project Knowledge to Preparation Workspace
-> - Refresh Knowledge Context after Formation
-> - Trace Knowledge Formation
->
-> Existing acquisition/research/awareness use cases use Existing Knowledge Context when relevant; Phase 1 uses a versioned local baseline fixture.
->
-> Model the application loop:
-> KnowledgeHub -> TKL KnowledgeProjection -> Preparation -> Raw Candidate -> TKW -> KnowledgeHub.
-> This is the future application relationship. Live feedback synchronization is follow-on scope, managed in the integration register.
+Prepare and export evidence-grounded raw proposals from explicit local fixtures.
 
+### DESCRIPTION
 
-> KNOWLEDGE PROJECTION SYNC NOTE FOR CODEX
->
-> Model the basic Knowledge Feedback synchronization capabilities/use cases where supported:
-> - append KnowledgeProjectionDelta for new/update/supersede changes;
-> - build/rebuild KnowledgeContextSnapshot from KnowledgeHub canonical current state;
-> - publish current snapshot + post-snapshot deltas to preparation workspaces;
-> - remove/deactivate obsolete projection context after rebuild.
->
-> Principle: append frequently, rebuild periodically.
-> Keep full live synchronization outside project-local Phase 1 acceptance.
+KnowledgeLake executes the project-local preparation flow using an explicit UTF-8 fixturePath and a fresh storeDirectory. It persists versioned Run, material and proposal lineage, writes JSON and Markdown exports, and returns the exact persisted report JSON in reportJson. Writes are side effects and expected failures retain structured local write outcomes. Fixture observations prove only local handling; live provider, receiving Candidate lifecycle, Admission and publication guarantees remain unverified.
 
+### PACKAGE
 
-> GOOGLE WORKSPACE PRIORITY NOTE FOR CODEX
->
-> Target Drive folders for production TKL JSON storage and Drive Project for the first external preparation context.
-> Phase 1 validates local representations/manual-result fixtures without live Google operations.
-> Gemini Notebook is an optional context for preparation/analysis/synthesis/production; exact product/API capabilities need adapter verification.
-> Do not introduce Notebook synchronization as a Phase 1 dependency.
+org.simplemodeling.textus.knowledgelake
+
+### USE CASE
+
+#### propose_raw_knowledge_candidate
+
+##### ID
+
+UC-KA-01
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUPPORTING ACTOR
+
+TextusKnowledgeWorkbench
+ResourceProvider
+KnowledgeProcessor
+
+##### SUMMARY
+
+Propose Raw Knowledge Candidate through project-local fixture/manual-result execution.
+
+##### PRECONDITION
+
+a valid UTF-8 local-flow v1 fixture, an empty explicit local store directory, versioned Resource/Evidence/Context and existing-information baseline, and explicitly supplied deterministic/manual preparation results and boundary observations.
+
+##### POSTCONDITION
+
+PreparedMaterial and a producer-scoped RawCandidateProposal are persisted with fixed Run/input/evidence lineage, local delivery observations are correlated, canonical JSON/Markdown/proposal exports exist, and the returned report describes actual persisted state. Fixture receipt/Candidate references prove only TKL-side handling; no TKW Candidate lifecycle, approval or Admission is implemented.
+
+##### GOAL
+
+Prepare and export an evidence-grounded raw proposal from local fixtures/manual results, preserving the canonical six-model contracts and uncertain-delivery correlation without invoking external actors.
+
+##### TRIGGER
+
+KnowledgeWorker requests project-local fixture/manual-result execution with an explicit fixturePath and empty storeDirectory.
+
+##### MAIN FLOW
+
+###### local_preparation
+
+1. Validate the UTF-8 fixture and verify that the explicitly selected local store is empty.
+2. Seed exact versioned Resources, Evidence and Context with external binding metadata and the existing-information baseline.
+3. Fix the Run inputs and existing-information baseline, preserving retained/reference-only content and known/unknown provenance.
+4. Import the supplied deterministic/manual preparation result with explicit processor, status and failures.
+5. Persist the Run and PreparedMaterial version together through the accepted local atomic/CAS boundary.
+6. Compose the immutable producer-key RawCandidateProposal from the persisted material and its exact Run/evidence lineage.
+7. Reserve delivery durably before invoking the local result fixture with the supplied correlation and producer/proposal key.
+8. Record the fixture Unknown outcome and perform same-key query/retry with exact proposal/correlation handling; any confirmed receipt/Candidate refs remain fixture assertions.
+9. Export canonical preparation-bundle JSON, derived PreparedMaterial Markdown and proposal request JSON from persisted values.
+10. Return the actual persisted report; later native success carries exact LocalFlowJson.encodeReport output in FixtureExecutionResult.reportJson and expected errors retain structured LocalError/framework failure handling.
+
+#### explore_candidates_by_theme
+
+##### ID
+
+UC-KA-02
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Explore Candidates by Theme
+
+##### GOAL
+
+Explore Candidates by Theme. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### discover_candidates_from_new_evidence
+
+##### ID
+
+UC-KA-03
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Discover Candidates from New Evidence
+
+##### GOAL
+
+Discover Candidates from New Evidence. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### inspect_candidate_evidence
+
+##### ID
+
+UC-KA-04
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Inspect Candidate Evidence
+
+##### GOAL
+
+Inspect Candidate Evidence. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### deliver_candidate_to_knowledge_workbench
+
+##### ID
+
+UC-KA-05
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Deliver Candidate to Knowledge Workbench
+
+##### GOAL
+
+Deliver Candidate to Knowledge Workbench. TKL-side local proposal delivery/result handling exists; real TKW integration remains unverified and later scope. This declaration implements no external operation or Candidate lifecycle.
+
+##### STATUS
+
+planned
+
+#### explore_candidates_against_existing_knowledge
+
+##### ID
+
+UC-KA-06
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Explore Candidates Against Existing Knowledge
+
+##### GOAL
+
+Explore Candidates Against Existing Knowledge. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### research_theme_across_sources
+
+##### ID
+
+UC-RE-01
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Research Theme Across Sources
+
+##### GOAL
+
+Research Theme Across Sources. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### trace_historical_context
+
+##### ID
+
+UC-RE-02
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Trace Historical Context
+
+##### GOAL
+
+Trace Historical Context. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### compare_views
+
+##### ID
+
+UC-RE-03
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Compare Views
+
+##### GOAL
+
+Compare Views. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### analyze_consensus
+
+##### ID
+
+UC-RE-04
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Analyze Consensus
+
+##### GOAL
+
+Analyze Consensus. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### extract_open_questions
+
+##### ID
+
+UC-RE-05
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Extract Open Questions
+
+##### GOAL
+
+Extract Open Questions. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### answer_from_evidence
+
+##### ID
+
+UC-RE-06
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Answer from Evidence
+
+##### GOAL
+
+Answer from Evidence. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### review_recent_changes
+
+##### ID
+
+UC-PA-01
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Review Recent Changes
+
+##### GOAL
+
+Review Recent Changes. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### review_new_evidence
+
+##### ID
+
+UC-PA-02
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Review New Evidence
+
+##### GOAL
+
+Review New Evidence. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### identify_active_discussions
+
+##### ID
+
+UC-PA-03
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Identify Active Discussions
+
+##### GOAL
+
+Identify Active Discussions. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### review_open_issues
+
+##### ID
+
+UC-PA-04
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Review Open Issues
+
+##### GOAL
+
+Review Open Issues. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### generate_project_digest
+
+##### ID
+
+UC-PA-05
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Generate Project Digest
+
+##### GOAL
+
+Generate Project Digest. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### notify_significant_change
+
+##### ID
+
+UC-PA-06
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Notify Significant Change
+
+##### GOAL
+
+Notify Significant Change. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### generate_report
+
+##### ID
+
+UC-CP-01
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Generate Report
+
+##### GOAL
+
+Generate Report. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### generate_slide_deck
+
+##### ID
+
+UC-CP-02
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Generate Slide Deck
+
+##### GOAL
+
+Generate Slide Deck. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### generate_infographic
+
+##### ID
+
+UC-CP-03
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Generate Infographic
+
+##### GOAL
+
+Generate Infographic. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### generate_mind_map
+
+##### ID
+
+UC-CP-04
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Generate Mind Map
+
+##### GOAL
+
+Generate Mind Map. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### generate_audio_video
+
+##### ID
+
+UC-CP-05
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Generate Audio / Video
+
+##### GOAL
+
+Generate Audio / Video. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### generate_llm_context
+
+##### ID
+
+UC-CP-06
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Generate LLM Context
+
+##### GOAL
+
+Generate LLM Context. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### synchronize_knowledge_context
+
+##### ID
+
+UC-KF-01
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Synchronize Knowledge Context
+
+##### GOAL
+
+Synchronize Knowledge Context. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### project_knowledge_to_preparation_workspace
+
+##### ID
+
+UC-KF-02
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Project Knowledge to Preparation Workspace
+
+##### GOAL
+
+Project Knowledge to Preparation Workspace. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### refresh_knowledge_context_after_formation
+
+##### ID
+
+UC-KF-03
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Refresh Knowledge Context after Formation
+
+##### GOAL
+
+Refresh Knowledge Context after Formation. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### trace_knowledge_formation
+
+##### ID
+
+UC-KF-04
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Trace Knowledge Formation
+
+##### GOAL
+
+Trace Knowledge Formation. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### append_knowledge_projection_delta
+
+##### ID
+
+UC-KF-05
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Append Knowledge Projection Delta
+
+##### GOAL
+
+Append Knowledge Projection Delta. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### rebuild_knowledge_context
+
+##### ID
+
+UC-KF-06
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Rebuild Knowledge Context
+
+##### GOAL
+
+Rebuild Knowledge Context. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+#### publish_current_knowledge_context
+
+##### ID
+
+UC-KF-07
+
+##### PRIMARY ACTOR
+
+KnowledgeWorker
+
+##### SUMMARY
+
+Publish Current Knowledge Context
+
+##### GOAL
+
+Publish Current Knowledge Context. Later scope; no operation is implemented by this declaration.
+
+##### STATUS
+
+planned
+
+# ACTOR
+
+## KnowledgeWorker
+
+### KIND
+
+human
+
+### DESCRIPTION
+
+A person requesting local preparation and examining evidence-grounded raw proposals.
+
+## TextusKnowledgeWorkbench
+
+### KIND
+
+external
+
+### DESCRIPTION
+
+Modeled future receiver owning Candidate formation, editing, review/approval and Admission. Local fixture outcomes implement no external operation or lifecycle.
+
+## ResourceProvider
+
+### KIND
+
+external
+
+### DESCRIPTION
+
+Modeled future resource/evidence provider. This scenario uses project-local fixtures and implements no provider operation.
+
+## KnowledgeProcessor
+
+### KIND
+
+external
+
+### DESCRIPTION
+
+Modeled future preparation processor. This scenario imports deterministic/manual results and implements no external processing operation.
+
+# VALUE
+
+## FixtureExecutionCommand
+- input-kind :: COMMAND
+
+### ATTRIBUTE
+
+| name           | type   | multiplicity |
+|----------------|--------|--------------|
+| fixturePath    | string | 1            |
+| storeDirectory | string | 1            |
+
+## FixtureExecutionResult
+
+### ATTRIBUTE
+
+| name       | type   | multiplicity |
+|------------|--------|--------------|
+| reportJson | string | 1            |
+
+# SERVICE
+
+## LocalPreparationService
+
+### SUMMARY
+
+Execute the persisted local fixture preparation and proposal flow.
+
+### DESCRIPTION
+
+LocalPreparationService accepts explicit fixturePath and storeDirectory strings through executeFixture. The fixture is read as UTF-8 and the selected store must be fresh. Successful execution persists revisions and derived exports and returns exact report JSON; failures preserve structured code, message, write outcome and observed revision. This service uses local fixture/manual results and supplies no live external integration guarantee.
+
+### OPERATION
+
+#### executeFixture
+
+##### SUMMARY
+
+Run one UTF-8 fixture into a fresh explicit local store and return its persisted report.
+
+##### DESCRIPTION
+
+fixturePath identifies the UTF-8 local-flow v1 fixture; storeDirectory identifies the fresh local store/output directory. Execution persists the accepted preparation/proposal flow and writes preparation-bundle.json, prepared-material.md and proposal-request.json. FixtureExecutionResult.reportJson carries the exact LocalFlowJson.encodeReport output, including persisted revision and export paths. An initialized store is refused; expected failures retain structured LocalError, including whether writes were NotApplied, Applied or Unknown. Projection or report failures can follow committed state. Runtime cleanup removes only owned temporary bootstrap files and never deletes the fixture or store. Receipt and Candidate references remain fixture assertions; no live provider or downstream acceptance is established.
+
+##### TYPE
+
+COMMAND
+
+##### INPUT
+
+###### TYPE
+
+FixtureExecutionCommand
+
+##### OUTPUT
+
+###### TYPE
+
+FixtureExecutionResult
+
+# ENTITY
+
+## LocalPreparationSession
+
+### ATTRIBUTE
+
+| name   | type     | multiplicity |
+|--------|----------|--------------|
+| id     | entityid | 1            |
+| status | int      | 1            |
+
+### StateMachine
+
+#### PreparationProposalWorkflow
+
+##### State
+
+###### Uninitialized
+
+####### Transition
+
+- TO :: Seeded
+- ON :: seed
+
+###### Seeded
+
+####### Transition
+
+- TO :: Prepared
+- ON :: prepare
+
+###### Prepared
+
+####### Transition
+
+- TO :: Proposed
+- ON :: propose
+
+###### Proposed
+
+####### Transition
+
+- TO :: Unknown
+- ON :: submitUnknown
+
+####### Transition
+
+- TO :: Confirmed
+- ON :: submitConfirmed
+
+####### Transition
+
+- TO :: Rejected
+- ON :: rejected
+
+####### Transition
+
+- TO :: Conflict
+- ON :: conflict
+
+###### Unknown
+
+####### Transition
+
+- TO :: Confirmed
+- ON :: queryConfirmed
+
+####### Transition
+
+- TO :: Rejected
+- ON :: rejected
+
+####### Transition
+
+- TO :: Conflict
+- ON :: conflict
+
+###### Confirmed
+
+###### Rejected
+
+###### Conflict
+
+##### Event
+
+###### seed
+
+###### prepare
+
+###### propose
+
+###### submitUnknown
+
+###### queryConfirmed
+
+###### submitConfirmed
+
+###### rejected
+
+###### conflict

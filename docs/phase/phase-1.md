@@ -1,7 +1,9 @@
 # Phase 1 — Project-local Knowledge Preparation and Proposal
 
-- Status: Planned; implementation and closure validation pending
-- Owner / mutation scope: `textus-knowledge-lake` only
+- Current status: Local core and native route implemented; documentation being prepared for acceptance; complete Step/Phase review, required full validation and local acceptance release pending.
+- Owner: Textus Knowledge Lake
+- Mutation scope: `textus-knowledge-lake` only
+- Update rule: Preserve Phase goals, scope and completion criteria; update status only from actual source, validation, independent review and accepted commit/tree evidence.
 - Scope authority: [Project-local Phase decision](../journal/2026-10-02-phase-1-project-local-boundary.md)
 - Checklist: [Phase 1 acceptance](phase-1-checklist.md)
 
@@ -85,3 +87,9 @@ External guarantees remain proposed/unverified until their owner validates them.
 5. The integration register is reconciled, and a closure proposal package identifies all necessary external work with owners, versioned artifacts, acceptance examples and resume conditions. External owners need not have implemented or accepted those proposals for this Phase to close.
 
 The first production path after this local baseline prioritizes Drive + Drive Project, with manually assisted processing permitted. Gemini Notebook remains an optional processing-context realization and is not a Phase 1 dependency.
+
+## Current local evidence and closure binding
+
+Accepted Step 1: `2511186de891e3eb40863bd14d898eca8701ef47`; accepted Step 2: `5778cfcad83f5a8353d91b1a29f1bf4adbb431f4`. The [public proposal/evidence journal](../journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) records unchanged v1 sources, verified generated fidelity, native 8/8 and actual CLI revision 7 with unknown/confirmed fixture observations. These focused results do not complete Step or Phase acceptance.
+
+The seven owner records and package /1 are documented locally. Native Step 3 acceptance commit/tree binding remains pending. Before actual closure, release bookkeeping must supply that accepted native binding and final independent review/full-validation evidence. Complete Step accumulator/review/acceptance commit and the sole Phase full review/final validation/release remain pending; no successor Phase or external production prerequisite is introduced.

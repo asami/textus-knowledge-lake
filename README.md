@@ -1,5 +1,9 @@
 # Textus Knowledge Lake (TKL)
 
+- Current status: Local core and selected native route implemented; native 8/8 and representative CLI verified; complete Step validation/review/acceptance commit and final Phase review/full validation/release pending.
+- Owner: Textus Knowledge Lake
+- Update rule: Record actual accepted source and validation evidence; preserve v1 contracts and distinguish local fixtures from external acceptance.
+
 Textus Knowledge Lake manages provider-neutral resources, evidence, knowledge-processing contexts, preparation and traceable candidate proposals. **TKL itself is the Knowledge Lake.** Google Workspace is its first production backend target.
 
 Drive folders hold source/working artifacts and canonical TKL metadata JSON / PreparedMaterial. KnowledgeProcessingContext describes a persistent purpose and selected evidence; Drive Project and Gemini Notebook are possible external realizations. ProcessingRun records one execution and its fixed inputs, results and lineage. The exact Notebook product/API is an adapter-design question.
@@ -56,11 +60,25 @@ Closure requires TKL-local behavior, reproducible local validation, accurate doc
 
 A simulated receipt / Candidate reference proves TKL-side handling only. Durable downstream receipt, concurrent duplicate prevention and production Admission remain requirements for their owners. TKL does not implement a substitute downstream service.
 
-The [acceptance checklist](docs/phase/phase-1-checklist.md) records pending delivery. Current CML is a scaffold; documentation and proposed contracts do not imply implemented behavior.
+The accepted Step 1 [preparation contract](docs/spec/preparation-contract-v1.md) supplies the six canonical models, strict lossless JSON and offline Markdown projection. The accepted Step 2 [local preparation flow](docs/spec/local-preparation-flow-v1.md) supplies immutable local atomic/CAS persistence, fixed-input Runs, manual-result import, producer-scoped proposals and reserved delivery with fixture result/correlation handling. These local contracts do not establish production Google or TKW acceptance.
+
+The [acceptance checklist](docs/phase/phase-1-checklist.md) records pending Phase closure. The [native application model v1](docs/spec/native-application-model-v1.md) now declares all 31 Use Cases, the local main flow, StateMachine and command DTO/service surface in CML. The selected ENTITY-associated StateMachine route has actual parser/compiler/generated fidelity evidence preserving 31 Use Cases, eight states, eight events, ten transitions and required DTO/main-flow/pre/postcondition projections. All eight native cases and the representative CLI passed through real generated Component dispatch, producing revision 7 with unknown/confirmed fixture observations. Complete Step validation/review/acceptance commit and final Phase review/full validation/release remain pending.
+
+## Native generation build
+
+The root build uses released sbt-cozy 0.1.16, Cozy 0.3.2.2 and CNCF 0.5.2 with Scala 3.3.8. [Project metadata](project.yaml), [launcher settings](conf/cozy/launcher.yaml) and [generation settings](conf/cozy/config.yaml) pin the native build without a development checkout or external service. Circe/ScalaTest remain in the build; ordinary Maven packaging is retained.
+
+Generate managed native sources and compile from this repository:
+
+```text
+sbt --batch cozyGenerate compile
+```
+
+CNCF command execution uses the registered serialized SBT runner. Released runtime preparation retained generated fidelity; focused native 8/8 and CLI success establish local normal dispatch and persisted results. Dedicated WORKFLOW/Composite execution remains unverified in the pinned release. See the [native spec and portable runtime command](docs/spec/native-application-model-v1.md#local-development-startup) and [public proposal/evidence journal](docs/journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) for the exact observed results and remaining acceptance.
 
 ## Integration management
 
-The [integration register](docs/notes/phase-1-integration-register.md) tracks owner, contract/version, TKL evidence, external unverified guarantees, open questions and follow-up work for each boundary. Phase closure produces a proposal package in this repository with sample payloads/fixtures, acceptance examples and recommended receiving-project work.
+The [integration register](docs/notes/phase-1-integration-register.md) tracks owner, contract/version, TKL evidence, external unverified guarantees, open questions and follow-up work for each boundary. The [TKL-P1-Integration-Proposals/1 package](docs/journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) now supplies exact sample payloads/fixtures, acceptance examples and recommended receiving-project work. Its native accepted-commit/tree and final review/validation binding must be completed at release; no production integration acceptance is claimed.
 
 Provider adapters map the semantic model onto external capabilities. TEAI/OpenClaw may perform transport, invocation/delegation and continuation where appropriate; these mechanisms do not redefine the TKL domain model. No provider-specific physical integration or shared infrastructure is invented to bypass a missing upstream capability.
 

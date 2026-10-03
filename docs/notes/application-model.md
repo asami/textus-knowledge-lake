@@ -1,7 +1,9 @@
 # TKL Application Model — Initial CML Draft
 
 - Date: 2026-09-23
-- Status: Initial model
+- Current status: Initial design retained; selected native local route generated, compiled and verified by eight native tests and representative CLI; complete Step/Phase acceptance pending.
+- Owner: Textus Knowledge Lake
+- Update rule: Preserve all Use Case IDs and design meaning; record actual local evidence and explicitly version any later integration contract.
 - Scope: Application Use Cases + Phase 1 Application Workflow
 
 ## Project-local Phase 1 authority (2026-10-02)
@@ -10,11 +12,19 @@
 
 The [integration register](phase-1-integration-register.md) owns tracking and closing proposals. TKL closure supplies versioned contracts, examples, local evidence and recommended external work; it does not require external implementation. This section supersedes any stronger live-integration reading of the initial use-case draft below.
 
+## Current native-model realization (2026-10-02)
+
+[Native application model v1](../spec/native-application-model-v1.md) specifies the [native CML source](../../src/main/cozy/textus-knowledge-lake.cml), all 31 Use Case IDs, the project-local preparation main flow, actors, command DTO/service and PreparationProposalWorkflow StateMachine. Selected existing constructs are COMPONENT, ACTOR, VALUE, SERVICE/OPERATION, ENTITY-associated StateMachine and nested USE CASE/MAIN FLOW. The previous exact-syntax TODO for these declarations is superseded by the source and spec; actual parser/generator, compiler and generated fidelity evidence preserves all 31 Use Cases, eight states, eight events, ten transitions and required DTO/main-flow/pre/postcondition projections. Released runtime preparation retained that fidelity; eight native cases and the representative CLI passed. See the [proposal and evidence journal](../journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md).
+
+The accepted Step 1 preparation contract and Step 2 local preparation/delivery flow remain authoritative. The native package consumes those six canonical Scala/JSON models without changing their persistence, producer-scoped proposal identity or uncertain-delivery semantics. UC-KA-05 has local TKL-side handling; receiving TKW integration remains unverified. All 30 future Use Cases are declared planned and their operations remain later scope.
+
+The released build pins sbt-cozy 0.1.16, Cozy 0.3.2.2, CNCF 0.5.2 and Scala 3.3.8. Slice A declares the native surface; Slice B executes the accepted local flow through real generated Component dispatch. Its eight unchanged native tests and CLI passed, with revision 7 and unknown/confirmed observations. Dedicated WORKFLOW support is unverified in the pinned release, so the selected StateMachine expresses the local modeled workflow without claiming automated/Composite execution. Application Capability and UseCaseSlice relationships below remain design intent. Complete Step 3 validation/review/acceptance commit and final Phase review/full validation/release remain pending. The versioned owner proposal package is locally available; native accepted-commit binding remains pending.
+
 ## Google Workspace backend and processing contexts (2026-10-02)
 
 The first implementation target is Google Workspace-backed TKL. Drive folders hold resources, canonical TKL metadata JSON and PreparedMaterial. Drive Project and Gemini Notebook are realizations of a provider-neutral Knowledge Processing Context, with purpose, source/version references, Existing Knowledge Context, processing history and output lineage. Contexts and storage folders are not fixed one-to-one.
 
-Notebook is available as a modeling option for preparation, analysis and synthesis as well as presentation. Drive Project remains the first implementation priority; Notebook integration is not required for the initial slice. Exact DTO/CML syntax and provider automation capabilities remain to be established.
+Notebook is available as a modeling option for preparation, analysis and synthesis as well as presentation. Drive Project remains the first implementation priority; Notebook integration is not required for the initial slice. Native local command DTO/CML declarations are specified above; provider automation capabilities remain to be established.
 
 TKL proposes Raw Candidates to TKW and can prepare resources for an existing TKW candidate. TKW retains candidate formation, editing, review, approval and Admission. See [Google Workspace-backed TKL](google-workspace-backed-tkl.md) and [the decision journal](../journal/2026-10-02-google-workspace-backed-tkl-contexts.md).
 
@@ -26,22 +36,22 @@ RawCandidateProposal carries a producer-scoped proposalId and versioned material
 
 ## Modeling intent
 
-TKL の Use Case と Workflow を分離して CML で扱う。
+Model TKL Use Cases and Workflows separately in CML.
 
-- Use Case: 利用者が TKL を使って達成したい目的
-- Application Capability: Use Case を実現するアプリケーション能力
-- Workflow: Capability を協調させて目的を遂行する実行モデル
+- Use Case: The goal a user wants to achieve using TKL
+- Application Capability: An application capability that realizes a Use Case
+- Workflow: An execution model that coordinates capabilities to achieve the goal
 
-Phase 1 では全 Use Case を実装しない。Application Model として将来用途まで定義し、最初の Use Case Slice として Evidence から Raw Knowledge Candidate を生成・export し、TKL 側の外部境界の結果処理までをローカルで実装・検証する。実 Workbench 接続はクローズ時の連携提案に含める。
+Phase 1 does not implement every Use Case. The Application Model defines future uses; its first Use Case Slice locally implements and verifies generation/export of a Raw Knowledge Candidate from Evidence and TKL-side external-boundary result handling. Actual Workbench connection is included in the closing integration proposals.
 
 ## Actors
 
-- Knowledge Worker — Knowledge Candidate の探索・提案を要求し、その根拠を確認する利用者
-- Textus Knowledge Workbench — Raw Knowledge Candidate を受け取り、Formation / Edit / Review / Approval を行う downstream application
-- Resource Provider — Google Workspace、Slack 等の Evidence provider
+- Knowledge Worker — A user who requests Knowledge Candidate discovery/proposals and examines their evidence
+- Textus Knowledge Workbench — The downstream application that receives Raw Knowledge Candidates and performs Formation / Edit / Review / Approval
+- Resource Provider — An Evidence provider such as Google Workspace or Slack
 - Knowledge Processor — LLM / deterministic processor / KnowledgeHub-oriented processor
 
-TEAI / OpenClaw は原則として Actor ではなく integration mechanism とする。
+TEAI / OpenClaw are generally integration mechanisms rather than Actors.
 
 ## Application Use Cases
 
@@ -50,7 +60,7 @@ TEAI / OpenClaw は原則として Actor ではなく integration mechanism と�
 #### UC-KA-01 Propose Raw Knowledge Candidate — Phase 1 Primary
 
 Goal:
-分散した Evidence から Knowledge として形成する価値のある Raw Knowledge Candidate を抽出し、Evidence とともに提案して Textus Knowledge Workbench へ引き渡す。
+Extract a Raw Knowledge Candidate worth forming into Knowledge from distributed Evidence, propose it with its Evidence, and hand it to Textus Knowledge Workbench.
 
 Primary Actor:
 Knowledge Worker
@@ -60,31 +70,31 @@ Textus Knowledge Workbench, Resource Provider, Knowledge Processor
 
 Main scenario:
 
-1. Knowledge Worker が知識候補の提案を要求する。
-2. TKL が目的と Context に基づいて Knowledgeization Scope を構成する。
-3. TKL が Drive / Gmail / Slack 等の Resource を解決する。
-4. TKL が必要な Evidence を収集・正規化する。
-5. TKL が PreparedMaterial を生成する。
-6. Knowledge Processor が PreparedMaterial から Knowledge Candidate を抽出する。
-7. TKL が Candidate、Evidence、Context、rationale、未解決事項を Raw Knowledge Candidate Proposal として構成する。
-8. Knowledge Worker が Proposal と Evidence を確認する。
-9. TKL が Raw Knowledge Candidate と PreparedMaterial / Evidence provenance を Textus Knowledge Workbench へ引き渡す。
-10. Candidate の編集、Semantic Mapping、既存 Knowledge との比較、Human Review / Approval、KnowledgeHub Formation は Workbench 側で行う。
+1. The Knowledge Worker requests a knowledge candidate proposal.
+2. TKL assembles the Knowledgeization Scope from the purpose and Context.
+3. TKL resolves Resources such as Drive / Gmail / Slack.
+4. TKL collects and normalizes the required Evidence.
+5. TKL generates PreparedMaterial.
+6. The Knowledge Processor extracts a Knowledge Candidate from PreparedMaterial.
+7. TKL composes the Candidate, Evidence, Context, rationale and unresolved questions into a Raw Knowledge Candidate Proposal.
+8. The Knowledge Worker examines the Proposal and Evidence.
+9. TKL hands the Raw Knowledge Candidate and PreparedMaterial / Evidence provenance to Textus Knowledge Workbench.
+10. Workbench performs Candidate editing, Semantic Mapping, comparison with existing Knowledge, Human Review / Approval and KnowledgeHub Formation.
 
 Postconditions:
 
-- Knowledge Candidate が Evidence-grounded な Proposal として存在する。
-- Candidate から PreparedMaterial と canonical Evidence まで provenance を追跡できる。
-- Raw Knowledge Candidate を完全な PreparedMaterial / Evidence provenance とともに Textus Knowledge Workbench 境界へ渡せる。
+- The Knowledge Candidate exists as an evidence-grounded Proposal.
+- Provenance is traceable from the Candidate to PreparedMaterial and canonical Evidence.
+- The Raw Knowledge Candidate can be handed to the Textus Knowledge Workbench boundary with complete PreparedMaterial / Evidence provenance.
 
 ### Knowledge Acquisition supporting use cases
 
-- UC-KA-02 Explore Candidates by Theme — テーマを指定して Knowledge Candidate を探索する
-- UC-KA-03 Discover Candidates from New Evidence — 新着 Evidence から候補を発見する
-- UC-KA-04 Inspect Candidate Evidence — Candidate の根拠を確認する
-- UC-KA-05 Deliver Candidate to Knowledge Workbench — Raw Candidate を Workbench へ引き渡す
+- UC-KA-02 Explore Candidates by Theme — Explore Knowledge Candidates for a specified theme
+- UC-KA-03 Discover Candidates from New Evidence — Discover candidates from new Evidence
+- UC-KA-04 Inspect Candidate Evidence — Inspect the evidence supporting a Candidate
+- UC-KA-05 Deliver Candidate to Knowledge Workbench — Deliver a Raw Candidate to Workbench
 
-Candidate の既存 Knowledge 比較、修正、Human Review、Approval、Admission は Textus Knowledge Workbench の Use Case とする。
+Candidate comparison with existing Knowledge, modification, Human Review, Approval and Admission are Textus Knowledge Workbench Use Cases.
 
 ### Research / Exploration
 
@@ -237,7 +247,7 @@ KnowledgeHub        -> downstream Knowledge runtime reached through Workbench
 
 ## CML implementation direction
 
-The next step is to encode the above as native CML model elements rather than keeping only this textual draft.
+The selected native declarations are now recorded in the source and native spec above. The following broader relationships remain conceptual follow-up design intent; they do not assert additional supported syntax or implemented operations.
 
 Expected relationships:
 
@@ -257,7 +267,7 @@ UseCaseSlice
   selects scenario path + executable specification
 ```
 
-The exact CML syntax should follow the current SimpleModeling/CML definitions and should not be invented locally in TKL.
+Any later syntax must follow verified SimpleModeling/CML definitions and must not be invented locally in TKL. Native generation/compiler preservation and actual operation execution have focused local evidence. Complete Step and Phase acceptance remain parent-owned work; future constructs require separate verified capability evidence.
 
 
 ## Knowledge Workbench boundary (2026-09-23)
