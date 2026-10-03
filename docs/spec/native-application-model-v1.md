@@ -1,10 +1,10 @@
 # Native application model v1
 
-- Current status: Supported native route generated, compiled and fidelity-checked; released preparation, eight native tests and representative CLI passed. Complete Step validation/review/acceptance commit and final Phase review/full validation/release pending.
+- Current status: Phase 1 closed on 2026-10-03: three accepted local Steps, independent full review and 251-test final suite complete; external integration remains proposed/unverified.
 - Owner: Textus Knowledge Lake
 - Update rule: Preserve normative model/runtime contracts and tool pins; update acceptance only from actual evidence and accepted commit/tree. External guarantees remain owner proposals.
 
-[The native CML source](../../src/main/cozy/textus-knowledge-lake.cml) declares `COMPONENT KnowledgeLake` in package `org.simplemodeling.textus.knowledgelake`. Its selected existing constructs are COMPONENT, ACTOR, VALUE, SERVICE/OPERATION, ENTITY-associated StateMachine and nested USE CASE/MAIN FLOW. Slice TKL-P1-03A has generation, compilation and generated-model fidelity evidence for the corrected native surface. Slice B supplies the generated application adapter and normal runtime entry, with actual normal native dispatch and persisted success/failure verified by all eight native tests and the representative CLI. Complete Step 3 validation/independent review/acceptance commit and final Phase review/full validation/release remain pending. See the [public proposal/evidence journal](../journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md).
+[The native CML source](../../src/main/cozy/textus-knowledge-lake.cml) declares `COMPONENT KnowledgeLake` in package `org.simplemodeling.textus.knowledgelake`. Its selected existing constructs are COMPONENT, ACTOR, VALUE, SERVICE/OPERATION, ENTITY-associated StateMachine and nested USE CASE/MAIN FLOW. Slice TKL-P1-03A has generation, compilation and generated-model fidelity evidence for the corrected native surface. Slice B supplies the generated application adapter and normal runtime entry, with actual normal native dispatch and persisted success/failure verified by all eight native tests and the representative CLI. Step 3 is independently reviewed and committed; the sole full Phase review and final 251-test suite passed. See the [public proposal/evidence journal](../journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md).
 
 ## Actors
 
@@ -72,7 +72,7 @@ The nested `MAIN FLOW local_preparation` describes the accepted local behavior:
 7. Reserve delivery durably before fixture invocation.
 8. Record Unknown, then query/retry using the same producer/proposal key and exact correlation rules.
 9. Export canonical bundle JSON, derived Markdown and proposal request JSON.
-10. Return the report from actual persisted state, with the native adapter carrying the exact `LocalFlowJson.encodeReport` output in `FixtureExecutionResult.reportJson`; normal native dispatch has passed focused test/CLI validation; complete Step acceptance remains pending.
+10. Return the report from actual persisted state, with the native adapter carrying the exact `LocalFlowJson.encodeReport` output in `FixtureExecutionResult.reportJson`; normal native dispatch has passed focused test/CLI validation and complete Step acceptance.
 
 Postconditions are persisted material/proposal and correlated delivery observations with immutable Run/input/evidence lineage, exports and an actual persisted report. The repository fixture reaches revision 7 through seed, preparation, proposal, Submit reservation, Unknown recording, Query reservation and Confirmed recording. Fixture confirmation does not establish receiving-service durability, duplicate prevention, Candidate lifecycle, approval or Admission.
 
@@ -212,4 +212,8 @@ The eight existing `NativeFlowSpec` scenarios and all their Given/When/Then clau
 | Reject an invalid NUL path | Structured invalid-path error and no state or output writes |
 | Reject generated CRUD and future operations | operationNotFound/404 for all nine excluded targets |
 
-Native dispatch against the real generated Component and persisted success/failure behavior have passed the focused eight native tests and representative CLI. The [owner proposal package](../journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) and [reconciled register](../notes/phase-1-integration-register.md) are locally documented. Complete Step suite/independent review/acceptance commit and final Phase full review/full validation/release remain pending. The package must be bound to the actual accepted native commit/tree before closure; focused local success is not production integration acceptance.
+Native dispatch against the real generated Component and persisted success/failure behavior have passed the focused eight native tests and representative CLI. The [owner proposal package](../journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) and [reconciled register](../notes/phase-1-integration-register.md) are locally documented. All three local Steps are accepted; the sole independent full Phase review and final 251-test suite passed. See the public package for actual source and closure bindings. The package is bound to the actual accepted native commit/tree and final review/full-suite evidence. External production integration remains unverified.
+
+## Phase 1 accepted source and final evidence
+
+Accepted native Step 3: `06c144b91111c408a0d0699178bffad66a7252fd`; source tree: `a3d54dd9cd55b96c640cfc00ab2d64d68c6d6bfc`. Independent full Phase review `TKL-P1-full-review-result/1` passed with zero blockers. Final `sbt --batch test` (`tkl-p1-final-full-suite-1`) passed all 251 tests in six suites, with zero failed/canceled/ignored/pending tests, zero aborted suites, exit 0 and released serial lock. The eight native scenarios and retained CLI revision 7 establish local fixture behavior. Closure reference: `tkl-phase-1-closure@1`; the distinct local release commit records this binding in its Git message. External guarantees remain unverified.

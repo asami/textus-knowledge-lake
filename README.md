@@ -1,6 +1,6 @@
 # Textus Knowledge Lake (TKL)
 
-- Current status: Local core and selected native route implemented; native 8/8 and representative CLI verified; complete Step validation/review/acceptance commit and final Phase review/full validation/release pending.
+- Current status: Phase 1 closed on 2026-10-03: three accepted local Steps, independent full review and 251-test final suite complete; external integration remains proposed/unverified.
 - Owner: Textus Knowledge Lake
 - Update rule: Record actual accepted source and validation evidence; preserve v1 contracts and distinguish local fixtures from external acceptance.
 
@@ -62,7 +62,7 @@ A simulated receipt / Candidate reference proves TKL-side handling only. Durable
 
 The accepted Step 1 [preparation contract](docs/spec/preparation-contract-v1.md) supplies the six canonical models, strict lossless JSON and offline Markdown projection. The accepted Step 2 [local preparation flow](docs/spec/local-preparation-flow-v1.md) supplies immutable local atomic/CAS persistence, fixed-input Runs, manual-result import, producer-scoped proposals and reserved delivery with fixture result/correlation handling. These local contracts do not establish production Google or TKW acceptance.
 
-The [acceptance checklist](docs/phase/phase-1-checklist.md) records pending Phase closure. The [native application model v1](docs/spec/native-application-model-v1.md) now declares all 31 Use Cases, the local main flow, StateMachine and command DTO/service surface in CML. The selected ENTITY-associated StateMachine route has actual parser/compiler/generated fidelity evidence preserving 31 Use Cases, eight states, eight events, ten transitions and required DTO/main-flow/pre/postcondition projections. All eight native cases and the representative CLI passed through real generated Component dispatch, producing revision 7 with unknown/confirmed fixture observations. Complete Step validation/review/acceptance commit and final Phase review/full validation/release remain pending.
+The [acceptance checklist](docs/phase/phase-1-checklist.md) records completed local Phase acceptance. The [native application model v1](docs/spec/native-application-model-v1.md) now declares all 31 Use Cases, the local main flow, StateMachine and command DTO/service surface in CML. The selected ENTITY-associated StateMachine route has actual parser/compiler/generated fidelity evidence preserving 31 Use Cases, eight states, eight events, ten transitions and required DTO/main-flow/pre/postcondition projections. All eight native cases and the representative CLI passed through real generated Component dispatch, producing revision 7 with unknown/confirmed fixture observations. All three local Steps are accepted; the sole independent full Phase review and final 251-test suite passed. See the public package for actual source and closure bindings.
 
 ## Native generation build
 
@@ -74,11 +74,11 @@ Generate managed native sources and compile from this repository:
 sbt --batch cozyGenerate compile
 ```
 
-CNCF command execution uses the registered serialized SBT runner. Released runtime preparation retained generated fidelity; focused native 8/8 and CLI success establish local normal dispatch and persisted results. Dedicated WORKFLOW/Composite execution remains unverified in the pinned release. See the [native spec and portable runtime command](docs/spec/native-application-model-v1.md#local-development-startup) and [public proposal/evidence journal](docs/journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) for the exact observed results and remaining acceptance.
+CNCF command execution uses the registered serialized SBT runner. Released runtime preparation retained generated fidelity; focused native 8/8 and CLI success establish local normal dispatch and persisted results. Dedicated WORKFLOW/Composite execution remains unverified in the pinned release. See the [native spec and portable runtime command](docs/spec/native-application-model-v1.md#local-development-startup) and [public proposal/evidence journal](docs/journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) for the exact observed results and completed local acceptance.
 
 ## Integration management
 
-The [integration register](docs/notes/phase-1-integration-register.md) tracks owner, contract/version, TKL evidence, external unverified guarantees, open questions and follow-up work for each boundary. The [TKL-P1-Integration-Proposals/1 package](docs/journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) now supplies exact sample payloads/fixtures, acceptance examples and recommended receiving-project work. Its native accepted-commit/tree and final review/validation binding must be completed at release; no production integration acceptance is claimed.
+The [integration register](docs/notes/phase-1-integration-register.md) tracks owner, contract/version, TKL evidence, external unverified guarantees, open questions and follow-up work for each boundary. The [TKL-P1-Integration-Proposals/1 package](docs/journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) now supplies exact sample payloads/fixtures, acceptance examples and recommended receiving-project work. Its accepted native commit/tree and actual full-review/full-validation evidence are bound below; external production integration remains unverified.
 
 Provider adapters map the semantic model onto external capabilities. TEAI/OpenClaw may perform transport, invocation/delegation and continuation where appropriate; these mechanisms do not redefine the TKL domain model. No provider-specific physical integration or shared infrastructure is invented to bypass a missing upstream capability.
 
@@ -89,3 +89,7 @@ Provider adapters map the semantic model onto external capabilities. TEAI/OpenCl
 - [Architecture](docs/notes/architecture.md)
 - [Application model](docs/notes/application-model.md)
 - [Review follow-up](docs/journal/2026-10-02-google-workspace-backed-tkl-review-follow-up.md)
+
+## Phase 1 accepted source and final evidence
+
+Accepted native Step 3: `06c144b91111c408a0d0699178bffad66a7252fd`; source tree: `a3d54dd9cd55b96c640cfc00ab2d64d68c6d6bfc`. Independent full Phase review `TKL-P1-full-review-result/1` passed with zero blockers. Final `sbt --batch test` (`tkl-p1-final-full-suite-1`) passed all 251 tests in six suites, with zero failed/canceled/ignored/pending tests, zero aborted suites, exit 0 and released serial lock. The eight native scenarios and retained CLI revision 7 establish local fixture behavior. Closure reference: `tkl-phase-1-closure@1`; the distinct local release commit records this binding in its Git message. External guarantees remain unverified.

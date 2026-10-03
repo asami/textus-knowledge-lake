@@ -1,6 +1,6 @@
 # Phase 1 — Project-local Knowledge Preparation and Proposal
 
-- Current status: Local core and native route implemented; documentation being prepared for acceptance; complete Step/Phase review, required full validation and local acceptance release pending.
+- Current status: Closed on 2026-10-03
 - Owner: Textus Knowledge Lake
 - Mutation scope: `textus-knowledge-lake` only
 - Update rule: Preserve Phase goals, scope and completion criteria; update status only from actual source, validation, independent review and accepted commit/tree evidence.
@@ -90,6 +90,6 @@ The first production path after this local baseline prioritizes Drive + Drive Pr
 
 ## Current local evidence and closure binding
 
-Accepted Step 1: `2511186de891e3eb40863bd14d898eca8701ef47`; accepted Step 2: `5778cfcad83f5a8353d91b1a29f1bf4adbb431f4`. The [public proposal/evidence journal](../journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) records unchanged v1 sources, verified generated fidelity, native 8/8 and actual CLI revision 7 with unknown/confirmed fixture observations. These focused results do not complete Step or Phase acceptance.
+Accepted Step 1: `2511186de891e3eb40863bd14d898eca8701ef47`; accepted Step 2: `5778cfcad83f5a8353d91b1a29f1bf4adbb431f4`. Accepted native Step 3: `06c144b91111c408a0d0699178bffad66a7252fd`; source tree: `a3d54dd9cd55b96c640cfc00ab2d64d68c6d6bfc`. Independent full Phase review `TKL-P1-full-review-result/1` passed with zero blockers. Final `sbt --batch test` (`tkl-p1-final-full-suite-1`) passed all 251 tests in six suites, with zero failed/canceled/ignored/pending tests, zero aborted suites, exit 0 and released serial lock. The eight native scenarios and retained CLI revision 7 establish local fixture behavior. Closure reference: `tkl-phase-1-closure@1`; the distinct local release commit records this binding in its Git message. External guarantees remain unverified.
 
-The seven owner records and package /1 are documented locally. Native Step 3 acceptance commit/tree binding remains pending. Before actual closure, release bookkeeping must supply that accepted native binding and final independent review/full-validation evidence. Complete Step accumulator/review/acceptance commit and the sole Phase full review/final validation/release remain pending; no successor Phase or external production prerequisite is introduced.
+The [public proposal/evidence journal](../journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) supplies all seven owner proposals with exact v1 sources, samples, acceptance examples, unresolved guarantees and resume conditions. All five completion criteria and all twelve checklist items are satisfied within TKL. Nonblocking [HYG-TKL-P1-001](../journal/2026/10/2026-10-02-phase-1-hygiene-follow-up.md) is recorded exactly for follow-up. No Development Candidate was added; no empty journal was created.

@@ -1,6 +1,6 @@
 # KnowledgeLake local user guide
 
-- Current status: Retained focused native tests and CLI demonstrate the local route. CAR conformance edits await fresh validation and independent complete Step acceptance; final Phase acceptance remains pending. The prior strict checker failed.
+- Current status: Phase 1 closed on 2026-10-03: three accepted local Steps, independent full review and 251-test final suite complete; external integration remains proposed/unverified.
 - Owner: Textus Knowledge Lake
 - Update rule: Keep examples aligned with canonical specs, fixture and released pins. Update acceptance only from actual evidence; preserve initialized stores and label external guarantees unverified.
 
@@ -59,4 +59,8 @@ The fixture contains retained Japanese text and reference-only/unknown inputs. P
 
 Normal handle cleanup closes the runtime and removes only its owned ephemeral bootstrap directory. It never removes the fixture, selected store/exports, project or prepared runtime evidence. Write outcomes may be NotApplied, Applied or Unknown; a failure message alone does not prove rollback or absence of effects.
 
-Direct local filesystem persistence and temporary bootstrap files are deliberate fixture/provider boundaries, not production provider acceptance. CAR publication, warehouse, previous-release ABI compatibility and live Help/Web/MCP routes remain unverified. Consult the [integration register](../../../../docs/notes/phase-1-integration-register.md#tkl-int-06) for the exact strict-lint/tooling observations and the [owner proposal package](../../../../docs/journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) for separate external work and pending release binding.
+Direct local filesystem persistence and temporary bootstrap files are deliberate fixture/provider boundaries, not production provider acceptance. CAR publication, warehouse, previous-release ABI compatibility and live Help/Web/MCP routes remain unverified. Consult the [integration register](../../../../docs/notes/phase-1-integration-register.md#tkl-int-06) for the exact strict-lint/tooling observations and the [owner proposal package](../../../../docs/journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) for separate external work and accepted local release binding.
+
+## Phase 1 accepted source and final evidence
+
+Accepted native Step 3: `06c144b91111c408a0d0699178bffad66a7252fd`; source tree: `a3d54dd9cd55b96c640cfc00ab2d64d68c6d6bfc`. Independent full Phase review `TKL-P1-full-review-result/1` passed with zero blockers. Final `sbt --batch test` (`tkl-p1-final-full-suite-1`) passed all 251 tests in six suites, with zero failed/canceled/ignored/pending tests, zero aborted suites, exit 0 and released serial lock. The eight native scenarios and retained CLI revision 7 establish local fixture behavior. Closure reference: `tkl-phase-1-closure@1`; the distinct local release commit records this binding in its Git message. External guarantees remain unverified.

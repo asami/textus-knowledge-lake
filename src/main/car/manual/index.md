@@ -1,6 +1,6 @@
 # KnowledgeLake reference manual
 
-- Current status: Local core and selected native route have retained focused evidence. CAR conformance repair awaits fresh validation and independent complete Step acceptance; final Phase closure remains pending. The prior strict checker failed.
+- Current status: Phase 1 closed on 2026-10-03: three accepted local Steps, independent full review and 251-test final suite complete; external integration remains proposed/unverified.
 - Owner: Textus Knowledge Lake
 - Update rule: Keep canonical contracts and released pins authoritative; record acceptance only from actual validation and accepted source. Distinguish local fixtures from external guarantees.
 
@@ -39,4 +39,8 @@ Direct host filesystem access is intentional for the accepted local fixture prov
 
 Fixture receipt/Candidate references prove local correlation handling only. They do not prove authenticated downstream identity, durable receipts, duplicate prevention, Candidate lifecycle, approval or Admission. Dedicated WORKFLOW/Composite and capability projections remain unverified in the pinned release.
 
-The prior strict CAR checker remains failed; fresh ordinary local CAR lint and independent Step/Phase acceptance are pending. Source help prose and manuals do not establish live Help/Web/MCP behavior. No published CAR, warehouse or prior-release ABI baseline acceptance is claimed. The [TKL-INT-06 tooling record](../../../../docs/notes/phase-1-integration-register.md#tkl-int-06) retains the ABI identity display, Scala dependency probe and unverified latest-plugin lookup observations under the exact pins; these observations do not mandate upstream implementation before local closure. The [owner proposal package](../../../../docs/journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) retains pending native release binding.
+The prior strict CAR checker remains FAILED. Ordinary local CAR lint passed with documented development exceptions; independent Step/full Phase review and the final 251-test suite passed. Source help prose and manuals do not establish live Help/Web/MCP behavior. No published CAR, warehouse or prior-release ABI baseline acceptance is claimed. The [TKL-INT-06 tooling record](../../../../docs/notes/phase-1-integration-register.md#tkl-int-06) retains the ABI identity display, Scala dependency probe and unverified latest-plugin lookup observations under the exact pins; these observations do not mandate upstream implementation before local closure. The [owner proposal package](../../../../docs/journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md) retains accepted native source and final local evidence bindings.
+
+## Phase 1 accepted source and final evidence
+
+Accepted native Step 3: `06c144b91111c408a0d0699178bffad66a7252fd`; source tree: `a3d54dd9cd55b96c640cfc00ab2d64d68c6d6bfc`. Independent full Phase review `TKL-P1-full-review-result/1` passed with zero blockers. Final `sbt --batch test` (`tkl-p1-final-full-suite-1`) passed all 251 tests in six suites, with zero failed/canceled/ignored/pending tests, zero aborted suites, exit 0 and released serial lock. The eight native scenarios and retained CLI revision 7 establish local fixture behavior. Closure reference: `tkl-phase-1-closure@1`; the distinct local release commit records this binding in its Git message. External guarantees remain unverified.

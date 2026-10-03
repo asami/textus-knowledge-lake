@@ -1,7 +1,7 @@
 # TKL Application Model — Initial CML Draft
 
 - Date: 2026-09-23
-- Current status: Initial design retained; selected native local route generated, compiled and verified by eight native tests and representative CLI; complete Step/Phase acceptance pending.
+- Current status: Phase 1 closed on 2026-10-03: three accepted local Steps, independent full review and 251-test final suite complete; external integration remains proposed/unverified.
 - Owner: Textus Knowledge Lake
 - Update rule: Preserve all Use Case IDs and design meaning; record actual local evidence and explicitly version any later integration contract.
 - Scope: Application Use Cases + Phase 1 Application Workflow
@@ -18,7 +18,7 @@ The [integration register](phase-1-integration-register.md) owns tracking and cl
 
 The accepted Step 1 preparation contract and Step 2 local preparation/delivery flow remain authoritative. The native package consumes those six canonical Scala/JSON models without changing their persistence, producer-scoped proposal identity or uncertain-delivery semantics. UC-KA-05 has local TKL-side handling; receiving TKW integration remains unverified. All 30 future Use Cases are declared planned and their operations remain later scope.
 
-The released build pins sbt-cozy 0.1.16, Cozy 0.3.2.2, CNCF 0.5.2 and Scala 3.3.8. Slice A declares the native surface; Slice B executes the accepted local flow through real generated Component dispatch. Its eight unchanged native tests and CLI passed, with revision 7 and unknown/confirmed observations. Dedicated WORKFLOW support is unverified in the pinned release, so the selected StateMachine expresses the local modeled workflow without claiming automated/Composite execution. Application Capability and UseCaseSlice relationships below remain design intent. Complete Step 3 validation/review/acceptance commit and final Phase review/full validation/release remain pending. The versioned owner proposal package is locally available; native accepted-commit binding remains pending.
+The released build pins sbt-cozy 0.1.16, Cozy 0.3.2.2, CNCF 0.5.2 and Scala 3.3.8. Slice A declares the native surface; Slice B executes the accepted local flow through real generated Component dispatch. Its eight unchanged native tests and CLI passed, with revision 7 and unknown/confirmed observations. Dedicated WORKFLOW support is unverified in the pinned release, so the selected StateMachine expresses the local modeled workflow without claiming automated/Composite execution. Application Capability and UseCaseSlice relationships below remain design intent. All three local Steps are accepted; the sole independent full Phase review and final 251-test suite passed. See the public package for actual source and closure bindings. The versioned owner proposal package carries the accepted native source and actual final evidence bindings.
 
 ## Google Workspace backend and processing contexts (2026-10-02)
 
@@ -267,7 +267,7 @@ UseCaseSlice
   selects scenario path + executable specification
 ```
 
-Any later syntax must follow verified SimpleModeling/CML definitions and must not be invented locally in TKL. Native generation/compiler preservation and actual operation execution have focused local evidence. Complete Step and Phase acceptance remain parent-owned work; future constructs require separate verified capability evidence.
+Any later syntax must follow verified SimpleModeling/CML definitions and must not be invented locally in TKL. Native generation/compiler preservation and actual operation execution have local acceptance evidence from the accepted Step, independent full Phase review and final suite. Future constructs require separate verified capability evidence.
 
 
 ## Knowledge Workbench boundary (2026-09-23)
@@ -426,3 +426,7 @@ KnowledgeHub changes
  -> publish snapshot + later deltas
  -> Gemini/other preparation
 ```
+
+## Phase 1 accepted source and final evidence
+
+Accepted native Step 3: `06c144b91111c408a0d0699178bffad66a7252fd`; source tree: `a3d54dd9cd55b96c640cfc00ab2d64d68c6d6bfc`. Independent full Phase review `TKL-P1-full-review-result/1` passed with zero blockers. Final `sbt --batch test` (`tkl-p1-final-full-suite-1`) passed all 251 tests in six suites, with zero failed/canceled/ignored/pending tests, zero aborted suites, exit 0 and released serial lock. The eight native scenarios and retained CLI revision 7 establish local fixture behavior. Closure reference: `tkl-phase-1-closure@1`; the distinct local release commit records this binding in its Git message. External guarantees remain unverified.

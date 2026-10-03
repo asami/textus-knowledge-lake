@@ -1,13 +1,13 @@
 # Phase 1 Integration Register
 
 - Date: 2026-10-02; reconciled 2026-10-03
-- Current status: Seven boundaries reconciled to implemented-local / proposal-ready / later-scope; external acceptance unverified; native Step acceptance and Phase closure pending.
+- Current status: Phase 1 closed on 2026-10-03: three accepted local Steps, independent full review and 251-test final suite complete; external integration remains proposed/unverified.
 - Owner: Textus Knowledge Lake
 - Update rule: Preserve stable IDs and frozen v1 contracts. Record attributable evidence, compatibility decisions and owner/resume conditions; version richer proposals explicitly. Fixture success never establishes external agreement.
 - Authority: [Project-local Phase 1](../phase/phase-1.md)
 - Package: [TKL-P1-Integration-Proposals/1](../journal/2026/10/2026-10-02-phase-1-integration-proposals-v1.md)
 
-Source application version: `0.1.0-SNAPSHOT`. Accepted Step 1: `2511186de891e3eb40863bd14d898eca8701ef47`; accepted Step 2: `5778cfcad83f5a8353d91b1a29f1bf4adbb431f4`. Native Step 3 commit/tree and final review/full-validation/release binding remain pending. External implementation/acceptance is not a Phase closure dependency.
+Source application version: `0.1.0-SNAPSHOT`. Accepted Step 1: `2511186de891e3eb40863bd14d898eca8701ef47`; accepted Step 2: `5778cfcad83f5a8353d91b1a29f1bf4adbb431f4`. Native Step 3 and actual final review/full-suite bindings are recorded in the public package and below. External implementation/acceptance is not a Phase closure dependency.
 
 Locally readable sources: [preparation contract](../spec/preparation-contract-v1.md), [local-flow contract](../spec/local-preparation-flow-v1.md), [native spec](../spec/native-application-model-v1.md), [canonical schema](../../schemas/tkl/preparation-bundle-v1.schema.json), [local-flow schema](../../schemas/tkl/local-flow-v1.schema.json), [complete bundle](../../src/test/resources/tkl/preparation-bundle-v1.json), [local-flow fixture](../../fixtures/tkl/local-flow-v1.json). The package contains exact samples and all receiving-owner acceptance examples.
 
@@ -137,7 +137,7 @@ Proposed receiving-owner acceptance examples:
 - Local evidence: Actual13 generated Scala sources preserve31UCs,8states,8events,10transitions, required DTO fields and primary main-flow/pre/postconditions; native-test6 prepared runtime,8/8 cases and CLI success. Named result is RecordPresentable via standard OperationResponse(Record), not OperationResult inheritance.
 - External unverified guarantees: Dedicated WORKFLOW/Composite execution, ApplicationCapability/UseCaseSlice projection and alternate ComponentStyle behavior have not been accepted. No class-absence inference or substitute framework.
 - Next owner work: Use the proved released route now. Owners investigate only future required shared projections and startup usability; do not make their development a Phase1 dependency.
-- CAR lint observation: The prior strict checker failed; the bounded project kind, conventional source layout and help/manual conformance repair is pending fresh validation and independent acceptance. The source v2 ABI was loaded by the runtime, while the linter displayed `unknown:0.0.0`. Its public-dependency probe used `org.goldenport:goldenport-cncf_3.3:0.5.2`, versus the actual Scala 3 dependency `org.goldenport:goldenport-cncf_3:0.5.2`. Latest sbt-cozy metadata lookup was unverified; the used release remains `0.1.16`. These observations do not establish missing upstream capability or require an upgrade.
+- CAR lint observation: The prior strict checker remains FAILED. The bounded project kind, conventional source layout and help/manual changes passed ordinary CAR lint (0 FAIL, 11 WARN) and independent Step/full Phase review under documented local development exceptions. The source v2 ABI was loaded by the runtime, while the linter displayed `unknown:0.0.0`. Its public-dependency probe used `org.goldenport:goldenport-cncf_3.3:0.5.2`, versus the actual Scala 3 dependency `org.goldenport:goldenport-cncf_3:0.5.2`. Latest sbt-cozy metadata lookup was unverified; the used release remains `0.1.16`. These observations do not establish missing upstream capability or require an upgrade.
 - Local boundary and remaining limits: Direct host filesystem use belongs to the accepted local fixture/export and atomic/CAS adapter and the owned ephemeral native bootstrap. Required path/report strings are single internal representations. No published CAR, previous-release ABI baseline, warehouse, live Help/Web or MCP acceptance is established; local source/runtime evidence does not substitute for them.
 - Proposed tooling verification: Owners verify source v2 ABI identity reporting, Scala 3 public-dependency coordinate selection and metadata lookup with Scala `3.3.8`, SBT `1.12.6`, sbt-cozy `0.1.16`, Cozy `0.3.2.2` and CNCF `0.5.2`, retaining actual diagnostics and released-route behavior. Any publication/compatibility or future provider work requires separate scope; upstream implementation is not a prerequisite for local Phase 1 closure.
 - Resume condition: Separate tooling investigation/implementation scope with exact parser/projection/runtime evidence and consumer compatibility.
@@ -183,3 +183,9 @@ Before closure, bind the package to the actual accepted native Step 3 commit/tre
 
 - 2026-10-02: Initial seven stable boundary IDs and owner obligations recorded.
 - 2026-10-03: Reconciled every boundary against accepted model/local flow, native 8/8 and CLI revision 7; froze package /1, versions, compatibility questions, concrete owner work and resume conditions. External limitations and pending acceptance/release remain explicit.
+
+## Phase 1 accepted source and final evidence
+
+Accepted native Step 3: `06c144b91111c408a0d0699178bffad66a7252fd`; source tree: `a3d54dd9cd55b96c640cfc00ab2d64d68c6d6bfc`. Independent full Phase review `TKL-P1-full-review-result/1` passed with zero blockers. Final `sbt --batch test` (`tkl-p1-final-full-suite-1`) passed all 251 tests in six suites, with zero failed/canceled/ignored/pending tests, zero aborted suites, exit 0 and released serial lock. The eight native scenarios and retained CLI revision 7 establish local fixture behavior. Closure reference: `tkl-phase-1-closure@1`; the distinct local release commit records this binding in its Git message. External guarantees remain unverified.
+
+- 2026-10-03: Final closure bookkeeping binds all three accepted Steps, native source tree, sole independent full review and actual 251-test final suite; seven owner proposals remain externally unverified.
