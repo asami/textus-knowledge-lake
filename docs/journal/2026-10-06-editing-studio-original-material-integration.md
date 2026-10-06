@@ -33,3 +33,12 @@ The same Drive object may remain the physical material; integration does not imp
 ## Follow-up
 
 When Editing Studio/TKL integration is implemented, define stable reference and metadata mapping between OriginalMaterialRef and TKL Managed Candidate Source/Resource identity, including lifecycle and access behavior. Preserve the existing provider-neutral TKL model.
+
+
+## Revision: materialize TKL-compatible Material Set from the start
+
+The initial direct-Drive implementation is refined: Editing Studio should not treat Drive as an unstructured blob store. It should materialize each submitted source package in the minimum TKL-compatible Material Set representation from the beginning, even while the write path is implemented directly with Google Drive APIs.
+
+This allows later control to move from Editing Studio -> Drive to Editing Studio -> TKL -> Drive without bulk data migration. TKL is expected to operate the raw/original material through its Managed Candidate Source/Resource/Evidence model.
+
+The Material Set should be directly useful to Google Workspace processing. Gemini in Drive is part of the standard preparation route. Gemini Notebook can consume selected Material Sets when deeper curated investigation/synthesis is useful, but Notebook is optional and does not define storage identity or validity.
