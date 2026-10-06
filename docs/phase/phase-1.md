@@ -76,3 +76,23 @@ The resulting knowledge must also reach an explicit BoK publication decision, wh
 Phase 1 should prioritize the Google preparation route based on **Drive + Drive Project + Gemini in Drive** where live Google integration is introduced.
 
 Gemini Notebook integration is not required for Phase 1 closure. It is an optional later presentation/production integration and must not expand the Phase 1 scope.
+
+
+## Editing Studio Managed Candidate Material Set (2026-10-06)
+
+Phase 1 must define a minimum TKL-compatible Material Set representation for managed candidate sources produced by applications such as NICT Editing Studio. The first producer is allowed to materialize the set directly into Google Drive before a TKL API exists, but the stored structure must be ingestible and operable by TKL without bulk migration.
+
+Minimum logical content:
+
+- stable Material Set identity and manifest/metadata;
+- original source files such as book/page photographs and audio;
+- derived artifacts such as transcript and capture-derived ISBN/title/annotation metadata;
+- provenance connecting derived artifacts to original sources;
+- producer/application and candidate identity references;
+- media/type metadata sufficient for TKL Resource/Evidence mapping.
+
+The physical Google Drive folder/file layout is an implementation mapping, not canonical TKL identity. Avoid mandatory duplication of large originals. Existing Drive objects may become TKL-managed resources through stable references.
+
+Drive + Drive Project + Gemini in Drive remains the standard initial Google preparation route. Gemini Notebook remains optional for curated investigation, synthesis or presentation where useful; the Material Set must not require Notebook to be valid. Gemini-facing documents/views may be projections while canonical management metadata remains in the TKL-defined representation.
+
+Acceptance/planning must include a concrete Editing Studio-style fixture containing photographs, audio, transcript and capture-derived metadata and demonstrate that TKL can identify the set, its evidence/provenance and its preparation inputs.
