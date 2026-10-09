@@ -96,3 +96,15 @@
 > Treat Drive + Drive Project + Gemini in Drive as the standard Google Preparation route.
 > Gemini Notebook is optional presentation/production tooling and is NOT required by the core use case/workflow or Phase 1.
 > Do not introduce Notebook synchronization as a Phase 1 dependency.
+
+
+> MATERIAL PACKAGE V1 NOTE FOR CODEX
+>
+> Material is now distinguished from PreparedMaterial.
+> - Material: self-describing Knowledge Lake package, physically journaled, containing source/working assets and provenance.
+> - PreparedMaterial: preparation result Entity used for candidate extraction, with the existing stronger lifecycle/version semantics.
+> - KAR: PreparedMaterial transport/export artifact, not the Material package storage format.
+>
+> Design source: docs/notes/material-package-v1.md
+>
+> When native CML modeling is implemented, inspect current Cozy/CML grammar first and model Material / MaterialAsset / Provenance / lineage only with supported constructs. Do not invent syntax.
