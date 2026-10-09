@@ -185,3 +185,18 @@ The logical path is relative to the Knowledge Lake root and is provider-neutral.
 Including namespaces such as `components/` and `shared/` in the logical path allows a Lake to grow without changing the identifier grammar.
 
 For v1, Material identity intentionally follows logical location. A future location-independent identity layer may be introduced if real use cases require Material relocation while preserving identity. Such a future layer would resolve to the v1 Material locator rather than replacing the Knowledge Lake path model prematurely.
+
+
+## Naming note: possible MAR terminology
+
+The package/export acronym for Material is intentionally not fixed in v1.
+
+Historically TKL has used KAR terminology around PreparedMaterial transport/export artifacts. With the current distinction between raw/working **Material** and processed **PreparedMaterial**, a Material-oriented archive/package name such as **MAR** may be semantically clearer because Material is source material rather than Knowledge itself.
+
+This is an open naming question, not a decision:
+
+- keep `Material Package` as the normative v1 term for now;
+- do not rename KAR or introduce MAR into implementation contracts yet;
+- when archive/export requirements for Material become concrete, compare KAR and MAR roles and decide whether they are separate formats or whether terminology should be revised.
+
+Operational experience with the simplemodeling.org BoK Knowledge Lake should inform the decision.
