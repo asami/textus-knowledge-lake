@@ -60,7 +60,7 @@ Example:
 ```json
 {
   "schema": "textus.material/1",
-  "id": "textus-control-center:2026-10-09:ai-operations-architecture",
+  "id": "textus:material:simplemodeling.org:components/textus-control-center/journal/2026/10/2026-10-09-ai-operations-architecture",
   "title": "Textus AI Operations Architecture",
   "createdAt": "2026-10-09T10:00:00+09:00",
   "component": "textus-control-center",
@@ -154,3 +154,34 @@ These can be added from real operational requirements.
 The first conformance case is the Textus AI Operations Architecture Material under the simplemodeling.org BoK Knowledge Lake.
 
 This case should be used to refine the specification before broad implementation.
+
+
+## Canonical logical identifiers
+
+Material Package v1 uses logical-location identifiers. No global Material registry is required.
+
+Knowledge Lake identity:
+
+```text
+textus:klake:<lake>
+```
+
+Material identity:
+
+```text
+textus:material:<lake>:<logical-path>
+```
+
+Example:
+
+```text
+textus:klake:simplemodeling.org
+
+textus:material:simplemodeling.org:components/textus-control-center/journal/2026/10/2026-10-09-ai-operations-architecture
+```
+
+The logical path is relative to the Knowledge Lake root and is provider-neutral. It is not a Google Drive physical path or folder ID, even when the initial adapter maps it directly onto a Drive folder hierarchy.
+
+Including namespaces such as `components/` and `shared/` in the logical path allows a Lake to grow without changing the identifier grammar.
+
+For v1, Material identity intentionally follows logical location. A future location-independent identity layer may be introduced if real use cases require Material relocation while preserving identity. Such a future layer would resolve to the v1 Material locator rather than replacing the Knowledge Lake path model prematurely.
