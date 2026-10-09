@@ -73,6 +73,75 @@ TKL/
 
 ファイルの `appProperties` は TKL ID など短い対応情報に利用できる。複雑な構造や長い処理履歴は JSON に置く。必要に応じて Gemini が参照しやすい文書へ投影するが、その投影を管理情報の正本にしない。
 
+
+## Journal store and current index projection
+
+For Knowledge Lakes that are used as a Body of Knowledge (BoK), the Drive layout should be self-contained: the logical meaning of the Lake must be recoverable without consulting a Git repository or another external index.
+
+The recommended storage model is:
+
+```text
+Knowledge Lake/
+└── components/
+    └── <component>/
+        ├── index/                  # mutable current projection
+        │   ├── spec.json
+        │   ├── design.json
+        │   ├── notes.json
+        │   └── journal.json
+        └── journal/                # append-oriented source of truth
+            └── YYYY/
+                └── MM/
+                    └── YYYY-MM-DD-<material-name>/
+                        ├── material.json
+                        ├── ...
+                        └── derived assets
+```
+
+### Journal as source of truth
+
+The `journal/` tree is the semantic history of the Knowledge Lake. New Material packages are added by date and should normally not be overwritten in place.
+
+A directory containing `material.json` is a Material package. The package may contain images, PDFs, SVGs, audio/video, generated artifacts, source snapshots, references, and other provider-suitable assets.
+
+The Material metadata must be sufficient to reconstruct its logical role without GitHub. Candidate metadata includes:
+
+- stable Material ID and title;
+- component / subsystem;
+- creation and update timestamps;
+- classification such as spec, design, notes, journal, architecture, reference, infographic;
+- status;
+- provenance and source references;
+- asset roles;
+- `derivedFrom`, `supersedes`, and related lineage when applicable.
+
+Git repositories, Slack, Gmail, external websites, and other systems are provenance/source references, not prerequisites for interpreting the Lake.
+
+### Index as current projection
+
+The `index/` tree is a mutable projection of the current logical view. It may expose familiar BoK categories such as `spec`, `design`, `notes`, and `journal` even though the physical Material packages remain in the dated journal tree.
+
+Index files may be overwritten. They are not the historical source of truth and must be rebuildable by scanning `journal/` and interpreting `material.json`.
+
+This gives the Lake two complementary views:
+
+- physical/history view: dated Material packages under `journal/`;
+- logical/current view: rebuildable projections under `index/`.
+
+### Google Drive version history
+
+Google Drive version history is an operational recovery aid for mutable index files. TKL does not use Drive's version history as the semantic version/history model of the BoK.
+
+Initially, no independent TKL index-backup mechanism is required. If operational experience requires stronger recovery, TKL may later add periodic index snapshots. Such snapshots remain operational recovery data rather than Knowledge semantics.
+
+### GitHub relationship
+
+GitHub remains appropriate for version-controlled text/model artifacts such as CML, Markdown specifications, source code, and exact reference diagrams. A Knowledge Lake Material may cite those artifacts as provenance or source.
+
+However, the Knowledge Lake must remain semantically self-contained. A consumer must be able to reconstruct the component's BoK structure and Material lineage from the Lake's journal and metadata even when GitHub is unavailable.
+
+This pattern is intentionally provider-neutral at the TKL semantic level. Google Drive is the first implementation backend.
+
 ## 知識処理の文脈モデル
 
 `Knowledge Processing Context` は概念名であり、DTO/CML の確定済み仕様ではない。少なくとも次の対応を記録できるモデルを設計する。
