@@ -193,3 +193,36 @@ README、Phase 1、CML scaffold に残る旧記述の整合は後続作業とす
 - [Decision journal](../journal/2026-10-02-google-workspace-backed-tkl-contexts.md)
 - [Google Drive projects](https://support.google.com/drive/answer/16684520?hl=en)
 - [Drive custom file properties](https://developers.google.com/workspace/drive/api/guides/properties)
+
+
+## Logical ID and repository binding
+
+TKL exposes provider-neutral logical identifiers rather than Drive folder IDs.
+
+```text
+Knowledge Lake:
+  textus:klake:<lake>
+
+Material:
+  textus:material:<lake>:<logical-path>
+```
+
+For the simplemodeling.org BoK:
+
+```text
+textus:klake:simplemodeling.org
+textus:material:simplemodeling.org:components/textus-control-center/journal/2026/10/2026-10-09-ai-operations-architecture
+```
+
+A Git repository may bind itself to a Lake and a logical base path using component-local Textus metadata:
+
+```yaml
+schema: textus.knowledge-lake-binding/1
+knowledgeLake:
+  id: textus:klake:simplemodeling.org
+  base: components/textus-control-center
+```
+
+The binding contains no provider locator. Google Drive folder IDs and equivalent backend-specific locators belong to the TKL adapter/resolver configuration.
+
+The Knowledge Lake remains self-contained; repository binding is a discovery/navigation aid from the repository into the Lake, not a dependency required to interpret Lake Materials.
