@@ -200,3 +200,23 @@ This is an open naming question, not a decision:
 - when archive/export requirements for Material become concrete, compare KAR and MAR roles and decide whether they are separate formats or whether terminology should be revised.
 
 Operational experience with the simplemodeling.org BoK Knowledge Lake should inform the decision.
+
+## Route-independent Material references
+
+The canonical `textus:material:<lake>:<logical-path>` identifier is also the application integration reference for Material.
+
+A producer may store the same logical Material Package through different physical/integration routes, for example:
+
+```text
+authenticated client -> Google Workspace adapter -> Knowledge Lake
+
+client -> TEAI -> OpenClaw -> TKL/Google Workspace -> Knowledge Lake
+```
+
+The route MUST NOT change the Material identifier or package semantics.
+
+Application components should persist and exchange the logical Material URN rather than Google Drive IDs or URLs. When an application needs an asset, it resolves the Material URN through TKL and then accesses the required asset through the configured provider adapter.
+
+For Editing Studio integration, large original media normally stays in the Knowledge Lake. The application server receives a Material URN and structured application data, and resolves originals only when processing requires them.
+
+The concrete lake identifier for an NICT Knowledge Lake remains open; specifications should use `<lake>` until that naming decision is made.
