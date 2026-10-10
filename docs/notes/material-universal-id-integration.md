@@ -1,34 +1,39 @@
-# Material identity across TKL and NICT Editing Studio
+# Material Entity ID and TKL Material URN
 
 Date: 2026-10-10
 Status: design decision; implementation pending
 
-## Decision
+## Distinct identifiers
 
-Material created by any producer (including the offline Editing Studio App) receives a CNCF UniversalId-conformant identifier at creation. The ID is preserved in the TKL Material Package `material.json.id`, across transport, and when NICT Editing Studio creates or updates its Material Entity. Editing Studio MUST NOT reissue a new ID on ingestion. A repeat submission with the same Material ID addresses the same Material Entity, subject to normal update semantics.
+Two different objects and identifiers must not be conflated.
 
-Use the CNCF typed-identity hierarchy `UniversalId -> abstract EntityId -> concrete MaterialId` for the receiving Material Entity. Concrete serialization, namespace and collection ownership must follow the current CNCF ID implementation and its Phase 52 evolution, rather than inventing a second grammar.
+1. **Material Entity ID**: a CNCF UniversalId-conformant identifier, issued by the originating application (including offline Editing Studio App). NICT Editing Studio creates or updates its Material Entity using the received ID without reissuing it. Its typed entity identity follows CNCF's `UniversalId -> EntityId -> MaterialId` model.
+2. **TKL Material URN**: `textus:material:<lake>:<logical-path>` identifies a **Material stored in the Textus Knowledge Lake** (the Material Package). This is a TKL logical reference/locator, not the Material Entity ID, and need not conform to CNCF UniversalId's grammar.
 
-The existing TKL v1 `textus:material:<lake>:<logical-path>` string is a *logical locator*, not a CNCF UniversalId. It MUST NOT be passed off as a conformant entity identifier. Keep it as a separate locator/resolution field during transition. Material identity must remain stable if the package moves. Provider IDs, folder paths and business keys do not generate entity IDs.
+A Material Entity can reference a stored TKL Material by its URN; neither identifier is derived from or substituted for the other. An application Material Entity may exist before its content is stored in TKL. The TKL URN is assigned/known when the TKL Material's logical location is established.
 
-## Lifecycle
+## Flow
 
-1. Producer issues Material ID once, including offline.
-2. TKL stores the ID and associates it with its logical package locator and assets.
-3. Editing Studio receives the ID and creates or updates Material Entity with that ID.
-4. Candidate is a distinct entity with its own ID and a reference to source Material ID.
-5. PreparedMaterial remains a distinct TKL entity and retains provenance references.
+- Editing Studio App creates Material and issues its CNCF Universal ID.
+- When applicable, content is uploaded/stored as a TKL Material Package, addressed by its TKL URN.
+- Editing Studio receives the originating Material Entity ID, creates or updates the corresponding Material Entity, and records the TKL Material URN separately as a reference to stored source assets.
+- Repeated delivery of the same Entity ID must not create a second Material Entity. The TKL URN must not be used as the Entity's primary key.
+- Information Candidate gets a distinct ID and records provenance to the originating Material Entity and/or TKL Material as appropriate.
 
-## Integration contract
+## Existing TKL contract
 
-- Preserve ID exactly through upload, retries, background synchronization and transport adapters.
-- A duplicate delivery does not create a second Material Entity.
-- Treat conflicting content/updates using explicit application update policy; do not add content hashes or bespoke integrity machinery.
-- Resolve original assets through TKL rather than embedding provider-specific IDs in entity identity.
-- Verify the current CNCF UniversalId issuance/parse/serialize APIs and collection semantics before coding; do not hardcode an illustrative ID format.
-- Existing packages with path-derived IDs require an explicit transition decision, not silent reinterpretation.
+Keep `material.json.id` as the TKL Material URN under the current Material Package v1 contract; do not replace it with an Entity ID. If a producer's Material Entity ID needs to be carried with the package, introduce an explicitly named optional field such as `sourceMaterialEntityId` after confirming the serialization/API contract. Avoid ambiguous dual use of `id`.
 
-## Related sources
+A TKL URN's logical-path semantics and any relocation behavior follow TKL's own rules. Do not silently reinterpret the URN as a location-independent Entity ID.
 
-- CNCF: `docs/design/id.md` (typed identity, namespace, collection, Phase 52).
-- TKL: `docs/notes/material-package-v1.md` (existing path-based Material locator).
+## Implementation checks
+
+- Confirm CNCF ID issuance, serialization, typed IDs and collection semantics against the current implementation, including Phase 52 changes.
+- Define the exact association field and ingestion DTO at the TKL/Editing Studio boundary.
+- Preserve both identifiers unchanged through retries, background synchronization and provider adapters.
+- No content hashing, integrity checks, or duplicate-ID mapping database solely for this integration.
+
+## References
+
+- CNCF: `docs/design/id.md`
+- TKL: `docs/notes/material-package-v1.md`
