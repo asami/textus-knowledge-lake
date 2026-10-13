@@ -64,6 +64,15 @@ The accepted Step 1 [preparation contract](docs/spec/preparation-contract-v1.md)
 
 The [acceptance checklist](docs/phase/phase-1-checklist.md) records completed local Phase acceptance. The [native application model v1](docs/spec/native-application-model-v1.md) now declares all 31 Use Cases, the local main flow, StateMachine and command DTO/service surface in CML. The selected ENTITY-associated StateMachine route has actual parser/compiler/generated fidelity evidence preserving 31 Use Cases, eight states, eight events, ten transitions and required DTO/main-flow/pre/postcondition projections. All eight native cases and the representative CLI passed through real generated Component dispatch, producing revision 7 with unknown/confirmed fixture observations. All three local Steps are accepted; the sole independent full Phase review and final 251-test suite passed. See the public package for actual source and closure bindings.
 
+## Planned Google Workspace delivery sequence
+
+| Phase | Owned delivery | Status | Expected duration | Acceptance |
+| --- | --- | --- | --- | --- |
+| [Phase 2](docs/phase/phase-2.md) | Real Drive acquisition, canonical persistence, conflicts and recovery; settled manual-interface handoff | Planned; not started | 7h | [Storage checklist](docs/phase/phase-2-checklist.md) |
+| [Phase 2.1](docs/phase/phase-2.1.md) | Actual manual processing/import, native material/proposal exports and complete end-to-end acceptance | Planned; not started | 6h | [Manual/aggregate checklist](docs/phase/phase-2.1-checklist.md) |
+
+The 2026-10-03 split retains Phase 2 as the first unit and adds Phase 2.1 after it; no later Phase is renumbered. Implementation and live verification have not started. Complete `sbt --batch test` validation is `final-only`, owned by Phase 2.1 for both members. Each member retains focused validation, live acceptance for its scope, independent review, Step acceptance and local closure. See the [original definition and applied split](docs/journal/2026-10-03-phase-2-definition.md).
+
 ## Native generation build
 
 The root build uses released sbt-cozy 0.1.16, Cozy 0.3.2.2 and CNCF 0.5.2 with Scala 3.3.8. [Project metadata](project.yaml), [launcher settings](conf/cozy/launcher.yaml) and [generation settings](conf/cozy/config.yaml) pin the native build without a development checkout or external service. Circe/ScalaTest remain in the build; ordinary Maven packaging is retained.
