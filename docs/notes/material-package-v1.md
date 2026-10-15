@@ -242,3 +242,34 @@ transaction between Drive and CNCF.
 Presence in the journal means that a Raw Material package was delivered to the
 staging/history boundary; it does not by itself grant Knowledge Lake read/update
 authority or prove admission into later knowledge-processing state.
+
+## Identity, locator, ownership and provenance
+
+Material separates four concerns:
+
+- Material ID: stable identity, allocated by textus-flutter-core for the mobile
+  ingestion route.
+- Material URN: a meaningful/recoverable locator derived from the canonical
+  Knowledge Lake journal layout. It is intentionally not fully opaque because
+  deterministic resolution/reconstruction from the Lake layout is an
+  architectural goal.
+- owner: the subject/organization that owns the Material as a managed resource.
+- createdBy: the subject that created/submitted this Material occurrence.
+
+Authorization-oriented user partitioning must not distort the canonical journal
+layout or force user identity into the URN merely to implement Drive ACLs.
+Ownership/provenance belongs in Material metadata.
+
+For mobile ingestion, Raw Material material.json and CNCF Material Data carry
+the same Material ID and compatible owner/createdBy information. Material Data
+also carries the Raw Material URN.
+
+owner and createdBy are authorization/provenance attributes, not credentials.
+A client-supplied owner value is never sufficient authority by itself. CNCF/TKL
+validates it against authenticated SecuritySubject, organization/tenant policy
+and the applicable create/proxy operation.
+
+The TKL join/admission path may use Material ID, Raw Material URN and admitted
+ownership/provenance as semantic consistency conditions between independently
+delivered Raw Material and Material Data. This is normal resource identity
+validation, not content-hash/integrity machinery.
