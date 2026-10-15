@@ -220,3 +220,25 @@ Application components should persist and exchange the logical Material URN rath
 For Editing Studio integration, large original media normally stays in the Knowledge Lake. The application server receives a Material URN and structured application data, and resolves originals only when processing requires them.
 
 The concrete lake identifier for an NICT Knowledge Lake remains open; specifications should use `<lake>` until that naming decision is made.
+
+
+## Editing Studio Material transport contract
+
+For the Editing Studio mobile ingestion route, textus-flutter-core allocates
+the Material ID before either transport branch starts. The same Material ID is
+embedded in both the Raw Material package uploaded to the Knowledge Lake
+journal/staging area and the Material Data registered through the CNCF
+application Operation.
+
+Material Data contains the logical access location of the Raw Material as a
+Textus Knowledge Lake URN. Provider-specific Google Drive file/folder IDs are
+not the Material identity and are not required in the CNCF-facing semantic
+contract.
+
+The two transports are independently retryable and converge by Material ID and
+the declared Raw Material URN. They are not implemented as a distributed
+transaction between Drive and CNCF.
+
+Presence in the journal means that a Raw Material package was delivered to the
+staging/history boundary; it does not by itself grant Knowledge Lake read/update
+authority or prove admission into later knowledge-processing state.
