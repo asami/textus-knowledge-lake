@@ -9,3 +9,35 @@ Knowledge Lake treats Lake/Material/source identifiers as references, not author
 A server possessing a stronger Google Drive/service credential must not act as an unrestricted confused deputy: a caller-provided Drive file ID, URI or Material URN alone is insufficient to authorize retrieval. The server must establish the caller/operation/source relationship or execute an explicitly authorized bounded system/proxy operation.
 
 Where Knowledge Lake entities use the CNCF canonical internal DSL, Entity authorization is inherited through the UnitOfWork chokepoint. Direct source/provider access remains a separate external-resource authority boundary and must not be inferred from Entity visibility alone.
+
+
+## Journal / staging security boundary
+
+The Editing Studio ingestion route intentionally allows textus-flutter-core to
+upload a newly created Raw Material package directly to the Google Drive-backed
+Journal/Staging area so large image/audio/video payloads do not need to transit
+a TKL application server.
+
+This direct data-plane upload is not general Google Drive or Knowledge Lake
+authority.
+
+Security invariants:
+
+- Flutter Core allocates the Material ID and uses the same ID for Raw Material
+  and CNCF Material Data.
+- Material Data refers to the Raw Material by a TKL URN; knowledge of the URN
+  is not access authority.
+- Client upload authority is bounded to the permitted Journal/staging ingestion
+  route and does not imply arbitrary Lake read/update/list, another subject's
+  journal access, or managed-source access.
+- TKL remains the authorization/control boundary for reading, resolving,
+  processing, updating or admitting managed Knowledge Lake resources.
+- Provider-specific Drive IDs are physical implementation data, not authority.
+- TKL must not use stronger Drive/service credentials as a confused deputy for
+  an arbitrary caller-supplied URN/file ID.
+- Journal content is untrusted/staged input until applicable TKL validation,
+  provenance and authorization/admission processing accepts it.
+
+This separates the large-payload data plane from the Knowledge Lake
+control/authorization plane without routing media bytes through TKL merely for
+security.
