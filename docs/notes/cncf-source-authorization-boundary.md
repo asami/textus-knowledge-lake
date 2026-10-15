@@ -41,3 +41,23 @@ Security invariants:
 This separates the large-payload data plane from the Knowledge Lake
 control/authorization plane without routing media bytes through TKL merely for
 security.
+
+## URN and ownership authorization rule
+
+The TKL URN intentionally reflects the canonical Lake/Journal layout sufficiently
+to support deterministic resolution and recovery. Security design must preserve
+that property rather than inserting per-user path segments solely to implement
+authorization.
+
+User/organization ownership is represented by Material owner/createdBy and
+CNCF/TKL relationship attributes. Neither the presence of an owner string in
+material.json nor knowledge of a URN grants authority.
+
+On registration/intake, ownership claims from the Raw Material/Material Data are
+validated against the authenticated SecuritySubject and the admitted operation.
+On later access, TKL/CNCF authorization evaluates the managed Material/resource
+relationship; it does not infer permission from URN path syntax.
+
+This keeps canonical storage/recovery layout, logical identity, ownership and
+authorization as distinct concerns while still allowing the URN to be a useful
+recoverable locator.
