@@ -1,0 +1,262 @@
+{
+  "format" : "cozy.car.abi-manifest.v2",
+  "component" : {
+    "namespace" : "org.simplemodeling.textus",
+    "id" : "KnowledgeLake",
+    "version" : "0.1.0-SNAPSHOT"
+  },
+  "abi" : {
+    "version" : 1,
+    "exports" : {
+      "components" : [ {
+        "namespace" : "org.simplemodeling.textus",
+        "id" : "KnowledgeLake"
+      } ],
+      "services" : [ {
+        "name" : "Material"
+      } ],
+      "operations" : [ {
+        "service" : "Material",
+        "name" : "searchMaterials",
+        "kind" : "QUERY",
+        "input" : "MaterialSearchQuery",
+        "output" : "MaterialSearchResult"
+      }, {
+        "service" : "Material",
+        "name" : "getMaterial",
+        "kind" : "QUERY",
+        "input" : "MaterialSelectionQuery",
+        "output" : "MaterialMetadata"
+      }, {
+        "service" : "Material",
+        "name" : "readOriginal",
+        "kind" : "QUERY",
+        "input" : "OriginalSelectionQuery",
+        "output" : "MaterialOriginalResult"
+      }, {
+        "service" : "Material",
+        "name" : "createMaterialRegistration",
+        "kind" : "COMMAND",
+        "input" : "MaterialRegistrationCreateCommand",
+        "output" : "MaterialRegistrationResult"
+      }, {
+        "service" : "Material",
+        "name" : "getMaterialRegistration",
+        "kind" : "QUERY",
+        "input" : "MaterialRegistrationSelectionQuery",
+        "output" : "MaterialRegistrationResult"
+      }, {
+        "service" : "Material",
+        "name" : "materializeMaterial",
+        "kind" : "COMMAND",
+        "input" : "MaterialRegistrationMaterializeCommand",
+        "output" : "MaterialRegistrationResult"
+      } ],
+      "types" : [ {
+        "name" : "MaterialSearchResult",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "items",
+          "type" : "MaterialSummary",
+          "multiplicity" : "*",
+          "required" : false
+        }, {
+          "name" : "offset",
+          "type" : "int",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "limit",
+          "type" : "int",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "hasMore",
+          "type" : "boolean",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialMetadata",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "materialRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "title",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "resources",
+          "type" : "MaterialResource",
+          "multiplicity" : "*",
+          "required" : false
+        }, {
+          "name" : "provenance",
+          "type" : "MaterialProvenance",
+          "multiplicity" : "*",
+          "required" : false
+        } ]
+      }, {
+        "name" : "MaterialSummary",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "materialRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "title",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialResource",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "resourceId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "role",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "mediaType",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "byteLength",
+          "type" : "long",
+          "multiplicity" : "?",
+          "required" : false
+        } ]
+      }, {
+        "name" : "MaterialProvenance",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "kind",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "reference",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialRegistrationResult",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "registrationId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "revision",
+          "type" : "long",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "state",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "materialRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialSearchQuery",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "text",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "offset",
+          "type" : "int",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "limit",
+          "type" : "int",
+          "multiplicity" : "?",
+          "required" : false
+        } ]
+      }, {
+        "name" : "MaterialSelectionQuery",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "materialRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "OriginalSelectionQuery",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "materialRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "resourceId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialOriginalResult",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "content",
+          "type" : "blob",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialRegistrationCreateCommand",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "contribution",
+          "type" : "json",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialRegistrationSelectionQuery",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "registrationId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialRegistrationMaterializeCommand",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "registrationId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      } ],
+      "entities" : [ ]
+    },
+    "dependencies" : [ ]
+  }
+}
