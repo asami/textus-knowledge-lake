@@ -9,7 +9,7 @@ import org.simplemodeling.textus.knowledgelake.material.{MaterialReferenceRuntim
 
 /*
  * @since   Oct. 21, 2026
- * @version Oct. 24, 2026
+ * @version Oct. 25, 2026
  */
 final class ComponentFactory extends Component.BundleFactory {
   override def primaryFactory: Component.PrimaryComponentFactory = KnowledgeLakePrimaryFactory
@@ -21,6 +21,7 @@ abstract class KnowledgeLakeParticipantFactoryBase extends KnowledgeLakeComponen
     super.initializationParameterDeclarations ++ Vector(OAuthConnectionRuntime.configurationKey,
       GoogleDriveConnectionRuntime.configurationKey,
       MaterialReferenceRuntime.modeKey, MaterialReferenceRuntime.catalogKey, MaterialReferenceRuntime.registeredBindingsKey,
+      MaterialReferenceRuntime.packagesKey,
       MaterialRegistrationConfiguration.configurationKey)
 
   protected final def component_core(name: String, componentId: ComponentId): Component.Core =

@@ -31,7 +31,7 @@ import org.simplemodeling.textus.knowledgelake.impl.{KnowledgeLakeParticipantFac
  * Test-owned synthetic provider, private grant files and public native lifecycle only.
  *
  * @since   Oct. 21, 2026
- * @version Oct. 24, 2026
+ * @version Oct. 25, 2026
  */
 private[knowledgelake] object MaterialReferenceFixture {
   val owner = "fixture-material-owner"
@@ -155,7 +155,7 @@ private[knowledgelake] object MaterialReferenceFixture {
   }
 
   def withSession[A](catalogText: Option[String] = Some(catalog().noSpaces), connection: String = "connected",
-      grant: String = "admitted")(body: Session => A): A = {
+      grant: String = "admitted", referenceMode: String = "bootstrap", packageCatalogText: Option[String] = None)(body: Session => A): A = {
     val previousruntime = GlobalRuntimeContext.current
     val previousglobal = Try(GlobalContext.globalContext).toOption
     val previouslog = LogBackendHolder.backend
@@ -191,6 +191,8 @@ private[knowledgelake] object MaterialReferenceFixture {
       val handle = CncfBootstrap.initialize(BootstrapConfig(cwd = root, args = Array(s"--textus.test.descriptor=$descriptor"))).TAKE
       try {
         val settings = catalogText.map(MaterialReferenceRuntime.catalogKey.name -> _).toMap ++
+          Option.when(referenceMode != "bootstrap")(MaterialReferenceRuntime.modeKey.name -> referenceMode).toMap ++
+          packageCatalogText.map(MaterialReferenceRuntime.packagesKey.name -> _).toMap ++
           (if (connection == "absent") Map.empty[String, String]
           else if (connection == "service-account") MaterialServiceAccountSpec.connectionSettings(root)
           else {

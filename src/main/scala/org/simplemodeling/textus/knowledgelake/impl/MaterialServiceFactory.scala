@@ -1,7 +1,8 @@
 package org.simplemodeling.textus.knowledgelake.impl
 
 import cats.syntax.all.*
-import org.goldenport.Consequence
+import java.util.Locale
+import org.goldenport.{Consequence, ConsequenceT}
 import org.goldenport.bag.BinaryBag
 import org.goldenport.cncf.action.ActionCall
 import org.goldenport.cncf.entity.EntitySnapshot
@@ -19,7 +20,7 @@ import org.simplemodeling.model.datatype.EntityId
 
 /*
  * @since   Oct. 21, 2026
- * @version Oct. 24, 2026
+ * @version Oct. 25, 2026
  */
 private[knowledgelake] final class MaterialServiceFactory extends KnowledgeLakeComponent.MaterialServiceFactory {
   import KnowledgeLakeComponent.MaterialService.*
@@ -43,7 +44,8 @@ private[knowledgelake] object MaterialServiceFactory {
 
   private def _registration_mode(core: ActionCall.Core): Consequence[Unit] = _mode(core).flatMap {
     case MaterialReferenceRuntime.Mode.Registered => Consequence.unit
-    case MaterialReferenceRuntime.Mode.Bootstrap => Consequence.serviceUnavailable("Material registration requires registered mode")
+    case MaterialReferenceRuntime.Mode.Bootstrap | MaterialReferenceRuntime.Mode.Packages =>
+      Consequence.serviceUnavailable("Material registration requires registered mode")
   }
   private def _registration_configuration(core: ActionCall.Core): Consequence[MaterialRegistrationConfiguration] =
     core.component.collect { case runtime: MaterialRegistrationRuntime => runtime }
@@ -119,6 +121,46 @@ private[knowledgelake] object MaterialServiceFactory {
     if (MaterialCatalog.validText(value, maximum)) Consequence.unit
     else Consequence.argumentInvalid("Material selection is invalid")
 
+  private def _packages(core: ActionCall.Core): Consequence[(String, MaterialPackageReadCatalog)] =
+    core.component.collect { case runtime: MaterialReferenceRuntime => runtime }.flatMap(_._material_package_catalog)
+      .fold[Consequence[(String, MaterialPackageReadCatalog)]](
+        Consequence.serviceUnavailable("Material package read configuration is unavailable"))(
+        catalog => Consequence.success(SecuritySubject.from(core.executionContext.security).subjectId -> catalog))
+
+  private def _package_snapshot(core: ActionCall.Core,
+    binding: MaterialPackageReadCatalog.Binding): ExecUowM[MaterialPackageReader.Snapshot] = for {
+    _ <- _package_pure(_connection_configured(core, "Material package connection is unavailable"))
+    credentials <- _package_pure(GoogleDriveCredentials.managedConnectionC(binding.connectionid))
+    store <- _package_pure(GoogleDriveFileStore.createC(binding.storename, credentials))
+    snapshot <- MaterialPackageReader._read(binding, store)
+  } yield snapshot
+
+  private def _package_search(core: ActionCall.Core, query: dto.MaterialSearchQuery): ExecUowM[Record] = for {
+    admitted <- _package_pure(_packages(core))
+    snapshots <- admitted._2.authorized(admitted._1).foldLeft(
+      _package_pure(Consequence.success(Vector.empty[MaterialPackageReader.Snapshot]))) { (previous, binding) => for {
+        accumulated <- previous
+        snapshot <- _package_snapshot(core, binding)
+      } yield accumulated :+ snapshot
+    }
+  } yield {
+    val needle = query.text.getOrElse("").toLowerCase(Locale.ROOT)
+    val matches = snapshots.filter(value => value.title.toLowerCase(Locale.ROOT).contains(needle) ||
+      value.materialref.toLowerCase(Locale.ROOT).contains(needle)).sortBy(_.materialref)
+    val offset = query.offset.getOrElse(0)
+    val limit = query.limit.getOrElse(20)
+    Record.data("items" -> matches.slice(offset, (offset.toLong + limit).min(Int.MaxValue).toInt).map(_.summary),
+      "offset" -> offset, "limit" -> limit, "hasMore" -> (offset.toLong + limit < matches.size.toLong))
+  }
+
+  private def _package_get(core: ActionCall.Core, reference: String): ExecUowM[MaterialPackageReader.Snapshot] = for {
+    admitted <- _package_pure(_packages(core))
+    binding <- _package_pure(admitted._2.resolve(admitted._1, reference))
+    snapshot <- _package_snapshot(core, binding)
+  } yield snapshot
+
+  private def _package_pure[A](value: Consequence[A]): ExecUowM[A] = ConsequenceT.fromConsequence(value)
+
   private def _registered_metadata(record: MaterialRegistrationRecord): Record = {
     val document = record.document
     Record.data("materialRef" -> document.location.urn, "title" -> document.contribution.title,
@@ -140,6 +182,7 @@ private[knowledgelake] object MaterialServiceFactory {
           admitted._2.search(admitted._1, query.text, query.offset.getOrElse(0), query.limit.getOrElse(20)))
         case MaterialReferenceRuntime.Mode.Registered =>
           search_registered_materials(query.text, query.offset.getOrElse(0), query.limit.getOrElse(20))
+        case MaterialReferenceRuntime.Mode.Packages => _package_search(core, query)
       }
     } yield OperationResponse.RecordResponse(result)
   }
@@ -155,6 +198,7 @@ private[knowledgelake] object MaterialServiceFactory {
           entry <- exec_from(admitted._2.resolve(admitted._1, query.materialRef))
         } yield entry.metadata
         case MaterialReferenceRuntime.Mode.Registered => get_registered_material(query.materialRef).map(_registered_metadata)
+        case MaterialReferenceRuntime.Mode.Packages => _package_get(core, query.materialRef).map(_.metadata)
       }
     } yield OperationResponse.RecordResponse(result)
   }
@@ -168,6 +212,7 @@ private[knowledgelake] object MaterialServiceFactory {
       result <- mode match {
         case MaterialReferenceRuntime.Mode.Bootstrap => _read_bootstrap(query)
         case MaterialReferenceRuntime.Mode.Registered => _read_registered(query)
+        case MaterialReferenceRuntime.Mode.Packages => _read_package(query)
       }
     } yield result
 
@@ -196,6 +241,16 @@ private[knowledgelake] object MaterialServiceFactory {
       resource = MaterialResourceBinding(original.resourceId, original.mediaType, Some(original.byteLength),
         MaterialStorage(binding.connectionid, file.reference.key, file.parent.key))
       result <- _read_resource(resource, binding.storename)
+    } yield result
+
+    private def _read_package(query: dto.OriginalSelectionQuery): ExecUowM[OperationResponse] = for {
+      _ <- exec_from(if (query.resourceId.matches("[A-Za-z0-9][A-Za-z0-9_-]{0,127}")) Consequence.unit
+        else Consequence.argumentInvalid("Material selection is invalid"))
+      snapshot <- _package_get(core, query.materialRef)
+      original <- exec_from(snapshot.originals.find(_.resourceid == query.resourceId)
+        .fold[Consequence[MaterialPackageReader.Original]](
+          Consequence.resourceNotFound("Material resource was not found"))(Consequence.success))
+      result <- _read_resource(original.binding, original.reference.store)
     } yield result
 
     private def _read_resource(resource: MaterialResourceBinding, storename: String): ExecUowM[OperationResponse] = for {

@@ -46,9 +46,24 @@ component initialization. Absence and exact `bootstrap` retain the existing
 trusted read-only catalog route. Exact `registered` selects the native
 registration view described below. Empty, padded or unknown mode strings fail
 with fixed `configurationInvalid`; rows, catalog contents and grants never
-infer a mode. Registered mode requires `material.reference.catalog` to be absent;
+infer a mode. Exact `packages` selects the additive stored-package read-only
+view in [Stored Material package read v1](material-package-read-v1.md).
+Registered and Packages require `material.reference.catalog` to be absent;
 supplying even an empty catalog with that mode is a configuration error. The
 views are never merged, shadowed or used as fallback for one another.
+
+Packages accepts only its trusted `material.reference.packages` bindings and
+rejects registered read bindings. Bootstrap and Registered reject any supplied
+package configuration, even empty. Package subjects authorize exact configured
+roots before connection/provider access; remote owner or provenance does not
+authorize. Packages uses bounded immediate-child enumeration (50 per page,
+four pages and 200 children per collection) and a strictly bounded 65536-byte
+manifest. It exposes logical metadata and original bytes through the same
+Operations, never physical mappings, SQL registration or automatic writes.
+Missing configuration is unavailable; an explicit empty materials list searches
+as empty. Registration commands remain available only in Registered mode.
+The paired MaterialPackageReadSpec and MaterialPackageReferenceSpec are linked
+from the package-read contract.
 
 In registered mode, the existing `searchMaterials` Operation uses the ordinary
 native Entity Store/Owner query over Registered rows, including native
@@ -136,7 +151,7 @@ Ordinary original reads never start preparation, create a Candidate, register
 a package or retry an uncertain mutation. Failures retain their Conclusion
 through both nested dispatches and the existing safe HTTP projection.
 
-Both explicit modes transfer original bytes through the admitted native
+All three explicit modes transfer original bytes through the admitted native
 Operation response, with private/no-store, nosniff, sandbox and attachment
 headers. Studio may display safe raster image types using a revocable local
 Blob URL, or offer a download for unsupported types. It never embeds active

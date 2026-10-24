@@ -10,7 +10,7 @@ import org.goldenport.cncf.entity.runtime.*
  * Passive native registration; Entity and its application datastore own persistence.
  *
  * @since   Oct. 21, 2026
- * @version Oct. 22, 2026
+ * @version Oct. 25, 2026
  */
 private[knowledgelake] trait MaterialRegistrationRuntime extends Component {
   self: MaterialReferenceRuntime =>
@@ -27,6 +27,8 @@ private[knowledgelake] trait MaterialRegistrationRuntime extends Component {
         case MaterialReferenceRuntime.Mode.Registered => MaterialRegistrationConfiguration._parse(text).map(Some(_))
         case MaterialReferenceRuntime.Mode.Bootstrap =>
           Consequence.configurationInvalid("Bootstrap Material reference mode cannot include registration configuration")
+        case MaterialReferenceRuntime.Mode.Packages =>
+          Consequence.configurationInvalid("Package Material reference mode cannot include registration configuration")
       }
     }
     _ <- Consequence {

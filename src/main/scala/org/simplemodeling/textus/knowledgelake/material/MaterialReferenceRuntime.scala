@@ -8,15 +8,16 @@ import io.circe.jawn.JawnParser
 
 /*
  * @since   Oct. 21, 2026
- * @version Oct. 22, 2026
+ * @version Oct. 25, 2026
  */
 private[knowledgelake] object MaterialReferenceRuntime {
   enum Mode {
-    case Bootstrap, Registered
+    case Bootstrap, Registered, Packages
   }
   val modeKey: ComponentParameterKey[String] = ComponentParameterKey.optionalString("material.reference.mode")
   val catalogKey: ComponentParameterKey[String] = ComponentParameterKey.optionalString("material.reference.catalog")
   val registeredBindingsKey: ComponentParameterKey[String] = ComponentParameterKey.optionalString("material.reference.registered.bindings")
+  val packagesKey: ComponentParameterKey[String] = ComponentParameterKey.optionalString("material.reference.packages")
 
   final case class ReadBinding(connectionid: String, storename: String) {
     override def toString: String = "MaterialReadBinding(<redacted>)"
@@ -55,10 +56,12 @@ private[knowledgelake] trait MaterialReferenceRuntime extends Component {
   private var _reference_mode: MaterialReferenceRuntime.Mode = MaterialReferenceRuntime.Mode.Bootstrap
   private var _material_catalog: Option[MaterialCatalog] = None
   private var _registered_bindings: MaterialReferenceRuntime.ReadBindings = MaterialReferenceRuntime._empty_bindings
+  private var _package_catalog: Option[MaterialPackageReadCatalog] = None
   private[knowledgelake] final def _material_reference_mode: MaterialReferenceRuntime.Mode = _reference_mode
   private[knowledgelake] final def materialCatalog: Option[MaterialCatalog] = _material_catalog
   private[knowledgelake] final def _material_read_binding(id: String): Option[MaterialReferenceRuntime.ReadBinding] =
     _registered_bindings._lookup(id)
+  private[knowledgelake] final def _material_package_catalog: Option[MaterialPackageReadCatalog] = _package_catalog
 
   override protected def initialize_component_c(params: ComponentInit): Consequence[Unit] = for {
     _ <- super.initialize_component_c(params)
@@ -66,6 +69,7 @@ private[knowledgelake] trait MaterialReferenceRuntime extends Component {
     mode <- selected.value match {
       case None | Some("bootstrap") => Consequence.success(MaterialReferenceRuntime.Mode.Bootstrap)
       case Some("registered") => Consequence.success(MaterialReferenceRuntime.Mode.Registered)
+      case Some("packages") => Consequence.success(MaterialReferenceRuntime.Mode.Packages)
       case _ => Consequence.configurationInvalid("Material reference mode configuration is invalid")
     }
     resolution <- initializationParameters.resolve(MaterialReferenceRuntime.catalogKey)
@@ -77,6 +81,9 @@ private[knowledgelake] trait MaterialReferenceRuntime extends Component {
       case MaterialReferenceRuntime.Mode.Registered =>
         if (resolution.value.isEmpty) Consequence.success(Option.empty[MaterialCatalog])
         else Consequence.configurationInvalid("Registered Material reference mode cannot include a bootstrap catalog")
+      case MaterialReferenceRuntime.Mode.Packages =>
+        if (resolution.value.isEmpty) Consequence.success(Option.empty[MaterialCatalog])
+        else Consequence.configurationInvalid("Packages Material reference mode cannot include a bootstrap catalog")
     }
     bindingresolution <- initializationParameters.resolve(MaterialReferenceRuntime.registeredBindingsKey)
     bindings <- mode match {
@@ -87,6 +94,24 @@ private[knowledgelake] trait MaterialReferenceRuntime extends Component {
         case None => Consequence.success(MaterialReferenceRuntime._empty_bindings)
         case Some(text) => MaterialReferenceRuntime._parse_bindings(text)
       }
+      case MaterialReferenceRuntime.Mode.Packages =>
+        if (bindingresolution.value.isEmpty) Consequence.success(MaterialReferenceRuntime._empty_bindings)
+        else Consequence.configurationInvalid("Packages Material reference mode cannot include registered read bindings")
     }
-  } yield { _reference_mode = mode; _material_catalog = catalog; _registered_bindings = bindings }
+    packageresolution <- initializationParameters.resolve(MaterialReferenceRuntime.packagesKey)
+    packages <- mode match {
+      case MaterialReferenceRuntime.Mode.Packages => packageresolution.value match {
+        case None => Consequence.success(Option.empty[MaterialPackageReadCatalog])
+        case Some(text) => MaterialPackageReadCatalog.parseC(text).map(Some(_))
+      }
+      case MaterialReferenceRuntime.Mode.Bootstrap | MaterialReferenceRuntime.Mode.Registered =>
+        if (packageresolution.value.isEmpty) Consequence.success(Option.empty[MaterialPackageReadCatalog])
+        else Consequence.configurationInvalid("Material package read configuration is invalid")
+    }
+  } yield {
+    _reference_mode = mode
+    _material_catalog = catalog
+    _registered_bindings = bindings
+    _package_catalog = packages
+  }
 }
