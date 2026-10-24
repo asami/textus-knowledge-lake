@@ -5,9 +5,8 @@ import org.goldenport.Consequence
 import org.goldenport.bag.BinaryBag
 import org.goldenport.cncf.action.ActionCall
 import org.goldenport.cncf.entity.EntitySnapshot
-import org.goldenport.cncf.filestore.{FileStoreKind, FileStoreRef, GoogleDriveCredentials, GoogleDriveFileStore}
+import org.goldenport.cncf.filestore.{FileStoreKind, FileStoreRef, GoogleDriveCredentials, GoogleDriveFileStore, GoogleDriveConnectionRuntime}
 import org.goldenport.cncf.security.SecuritySubject
-import org.goldenport.cncf.oauth.OAuthConnectionRuntime
 import org.goldenport.cncf.unitofwork.ExecUowM
 import org.goldenport.datatype.{ContentType, MimeType}
 import org.goldenport.http.{HttpResponse, HttpStatus}
@@ -20,7 +19,7 @@ import org.simplemodeling.model.datatype.EntityId
 
 /*
  * @since   Oct. 21, 2026
- * @version Oct. 22, 2026
+ * @version Oct. 24, 2026
  */
 private[knowledgelake] final class MaterialServiceFactory extends KnowledgeLakeComponent.MaterialServiceFactory {
   import KnowledgeLakeComponent.MaterialService.*
@@ -92,10 +91,7 @@ private[knowledgelake] object MaterialServiceFactory {
         document.location.logicalPath.split("/", -1).dropRight(1).mkString("/") == configuration.logicalparent)
           Consequence.unit else Consequence.resourceInvalid("Material registration does not match its configured destination"))
       originals <- exec_from(MaterialRegistrationSource._admit(document.contribution, configuration))
-      _ <- exec_from(core.component.fold[Consequence[Unit]](Consequence.serviceUnavailable("Material registration connection is unavailable"))(
-        component => component.initializationParameters.resolve(OAuthConnectionRuntime.configurationKey).flatMap { resolution =>
-          if (resolution.value.isDefined) Consequence.unit else Consequence.serviceUnavailable("Material registration connection is unavailable")
-        }))
+      _ <- exec_from(_connection_configured(core, "Material registration connection is unavailable"))
       credentials <- exec_from(GoogleDriveCredentials.managedConnectionC(configuration.connectionid))
       store <- exec_from(GoogleDriveFileStore.createC(configuration.storename, credentials))
       writer <- exec_from(MaterialPackageWriter.createC(store, configuration.lake, configuration.logicalparent,
@@ -203,10 +199,7 @@ private[knowledgelake] object MaterialServiceFactory {
     } yield result
 
     private def _read_resource(resource: MaterialResourceBinding, storename: String): ExecUowM[OperationResponse] = for {
-      _ <- exec_from(core.component.fold[Consequence[Unit]](Consequence.serviceUnavailable("Material original runtime is unavailable"))(
-        component => component.initializationParameters.resolve(OAuthConnectionRuntime.configurationKey).flatMap { resolution =>
-          if (resolution.value.isDefined) Consequence.unit else Consequence.serviceUnavailable("Material original connection is unavailable")
-        }))
+      _ <- exec_from(_connection_configured(core, "Material original connection is unavailable"))
       credentials <- exec_from(GoogleDriveCredentials.managedConnectionC(resource.storage.connectionid))
       store <- exec_from(GoogleDriveFileStore.createC(storename, credentials))
       reference = FileStoreRef(store.name, resource.storage.resourcekey)
@@ -225,5 +218,11 @@ private[knowledgelake] object MaterialServiceFactory {
       Record.data("Cache-Control" -> "private, no-store", "X-Content-Type-Options" -> "nosniff",
         "Content-Security-Policy" -> "default-src 'none'; sandbox", "Content-Disposition" -> "attachment; filename=\"original\"")))
   }
+  private def _connection_configured(core: ActionCall.Core, message: String): Consequence[Unit] =
+    core.component match {
+      case Some(runtime: GoogleDriveConnectionRuntime) if runtime.hasGoogleDriveConfiguration => Consequence.unit
+      case _ => Consequence.serviceUnavailable(message)
+    }
+
   private def _invalid[A]: Consequence[A] = Consequence.resourceInvalid("Material original does not match its configured resource")
 }

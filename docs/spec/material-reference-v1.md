@@ -110,10 +110,12 @@ URN, path, title or client input, and no discovery/list operation is performed.
 The existing native GoogleDriveFileStore then confirms the exact persisted
 file ID, file kind, parent, media and known length, followed by exact media and
 known Bag length on read. Its binary Bag and private response headers are
-preserved. Initialized OAuth configuration is required before managed connection
-resolution. The grant remains with this TKL instance and actual caller; native
-provider/custody Conclusions propagate without retries, writes or identity
-substitution. Public Operations, DTOs and ABI are unchanged. This read adapter
+preserved. The explicitly selected managed Google Drive authentication strategy
+must be initialized before connection resolution. The connection remains with
+this TKL instance and its admitted actual caller; when OAuth is selected, its
+owner-bound user grant remains in that instance's custody. Native provider/custody
+Conclusions propagate without retries, writes or identity substitution.
+Public Operations, DTOs and ABI are unchanged. This read adapter
 adds no public registration commands or M03 availability claim. Runtime source
 ingress/registration, composed Workbench/Studio registered activation, packaged
 and real Google evidence and connected whole Phase acceptance remain required.
@@ -193,6 +195,35 @@ returned media and any declared length must still match. Mismatch fails without
 fallback, automatic registration or business writes.
 
 ## OAuth connection handoff
+
+### Additive service-account selection (2026-10-24)
+
+The owning TKL factory also declares CNCF's optional
+`google-drive.service-account.configuration` opaque SecretReference. With this
+explicit setting, the common GoogleDriveConnectionRuntime uses the service
+account instead of a user grant; OAuth configuration and this setting are
+mutually exclusive. Existing OAuth configuration and browser management remain
+unchanged when the new setting is absent. A stale ambient
+GOOGLE_APPLICATION_CREDENTIALS never changes an OAuth selection.
+
+The private configuration follows CNCF `cncf.google-drive-service-account/1`:
+connectionId, allowedSubjects, scopes, and either the canonical credentialFile
+path or explicit credentialEnvironment=GOOGLE_APPLICATION_CREDENTIALS. Private
+host/key custody, native token HTTP admission and renewal belong to CNCF.
+TKL's existing logical storage mappings still refer only to connectionId and
+storeName; no key, token, email or physical layout enters Studio/Workbench APIs.
+Allowing a caller to use the server connection never grants Material/Entity
+permission, and Material permission alone never grants connection use.
+Registration and original reads share this explicit selection without an
+OAuth-only availability prerequisite. Missing/invalid configuration or denied
+token acquisition never falls back to another grant or retries a business write.
+
+`MaterialServiceAccountSpec` covers the actual owning factory/native operation
+read path, token reuse and independent Material/connection authorization, with
+existing OAuth specifications retained. Real Mac mini/Google Drive connection
+and upload/readback remain separate operational acceptance, not claimed here.
+
+### Existing user OAuth handoff
 
 TKL composes the existing CNCF `OAuthConnectionRuntime`. Its factory declares
 the existing `oauth.connection.configuration` opaque secret-reference key.

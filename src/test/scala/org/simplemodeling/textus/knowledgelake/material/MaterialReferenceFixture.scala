@@ -31,7 +31,7 @@ import org.simplemodeling.textus.knowledgelake.impl.{KnowledgeLakeParticipantFac
  * Test-owned synthetic provider, private grant files and public native lifecycle only.
  *
  * @since   Oct. 21, 2026
- * @version Oct. 21, 2026
+ * @version Oct. 24, 2026
  */
 private[knowledgelake] object MaterialReferenceFixture {
   val owner = "fixture-material-owner"
@@ -76,7 +76,7 @@ private[knowledgelake] object MaterialReferenceFixture {
   final case class Call(method: String, path: String, headers: Map[String, String], properties: Vector[Property]) {
     override def toString: String = "Call(<redacted>)"
   }
-  final class Driver(responses: Vector[HttpResponse]) extends HttpDriver {
+  final class Driver(responses: Vector[HttpResponse], tokenResponse: Option[HttpResponse] = None) extends HttpDriver {
     private var _calls = Vector.empty[Call]
     private var _acquisitions = 0
     def calls: Vector[Call] = _calls
@@ -88,7 +88,12 @@ private[knowledgelake] object MaterialReferenceFixture {
       responses.lift(index).getOrElse(throw new AssertionError("Unexpected native HTTP request"))
     }
     def post(path: String, body: Option[String], headers: Map[String, String], properties: Vector[Property]): HttpResponse =
-      throw new AssertionError("Material reference must not POST")
+      tokenResponse match {
+        case Some(response) if path == "https://oauth2.googleapis.com/token" =>
+          _calls = _calls :+ Call("POST", path, headers, properties)
+          response
+        case _ => throw new AssertionError("Material reference must not POST")
+      }
     def put(path: String, body: Option[String], headers: Map[String, String], properties: Vector[Property]): HttpResponse =
       throw new AssertionError("Material reference must not PUT")
   }
@@ -160,8 +165,9 @@ private[knowledgelake] object MaterialReferenceFixture {
         "baseUrl" -> Json.fromString("https://www.googleapis.com/"),
         "limits" -> Json.obj("connectTimeoutMillis" -> Json.fromInt(1000), "readTimeoutMillis" -> Json.fromInt(2000), "responseBytes" -> Json.fromInt(4096)),
         "grants" -> Json.arr(Json.obj("componentId" -> Json.fromString(if (grant == "wrong-owner") "org.example.Unrelated" else KnowledgeLakeComponent.name),
-          "origins" -> Json.arr(Json.fromString(if (grant == "wrong-origin") "https://example.invalid" else "https://www.googleapis.com")),
-          "methods" -> Json.arr(Json.fromString("GET")))))
+          "origins" -> Json.fromValues((Vector(if (grant == "wrong-origin") "https://example.invalid" else "https://www.googleapis.com") ++
+            Option.when(connection == "service-account")("https://oauth2.googleapis.com")).map(Json.fromString)),
+          "methods" -> Json.fromValues((Vector("GET") ++ Option.when(connection == "service-account")("POST")).map(Json.fromString)))))
       val config = if (grant == "absent") Json.obj() else Json.obj("textus.subsystem.http-execution.plan" -> Json.fromString(httpplan.noSpaces))
       Files.writeString(Files.createDirectories(root.resolve(".textus")).resolve("config.json"), config.noSpaces)
       val descriptor = root.resolve("test.yaml")
@@ -185,7 +191,9 @@ private[knowledgelake] object MaterialReferenceFixture {
       val handle = CncfBootstrap.initialize(BootstrapConfig(cwd = root, args = Array(s"--textus.test.descriptor=$descriptor"))).TAKE
       try {
         val settings = catalogText.map(MaterialReferenceRuntime.catalogKey.name -> _).toMap ++
-          (if (connection == "absent") Map.empty[String, String] else {
+          (if (connection == "absent") Map.empty[String, String]
+          else if (connection == "service-account") MaterialServiceAccountSpec.connectionSettings(root)
+          else {
             val source = root.resolve("operator.json")
             _write_private(source, _connection_document(root).noSpaces)
             if (connection == "connected") _write_private(root.resolve("grant.json"), _grant_document.noSpaces)

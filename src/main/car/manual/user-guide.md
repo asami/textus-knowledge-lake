@@ -12,8 +12,14 @@ This is a cross-project document
 reference, not a file in the TKL repository. Consult it for registration,
 bootstrap/configuration procedures and the retained execution history.
 
-Before use, the operator needs a TKL-bound Google client and private connection
-configuration, plus the explicitly selected reference mode. The default
+Before use, the operator selects one TKL-bound Google authentication strategy:
+the existing browser OAuth connection, or the explicit server service-account
+connection. Both require private configuration; supplying both is an error.
+The service-account setup procedure is in the TKL source checkout at
+`docs/journal/2026/2026-10-24-service-account-connection-setup.md` (a source
+reference, not a packaged manual link). It requires a shared Drive accessible
+to that account and an explicit native-caller allowlist; it does not require
+browser consent. The operator also selects the reference mode. The default
 bootstrap mode uses one selected harmless existing original and a trusted
 read-only TKL catalog. Its caller must have native provider-authenticated
 identity and appear in that Material's exact `authorizedSubjects`.
@@ -32,9 +38,13 @@ Studio registered activation still requires its remaining integration gates.
 
 1. Establish authentication for Studio and for TKL connection management.
    Shared hosting alone does not establish identity at both components.
-2. Use the existing connection management at `/web/knowledge-lake/connections`
+2. For browser OAuth, use the existing connection management at `/web/knowledge-lake/connections`
    and explicitly complete any required OAuth consent. The callback belongs to
    TKL. Do not bridge authentication or copy/relabel an old Studio grant.
+   For the service-account strategy, the operator initializes its private
+   configuration instead. The OAuth management page does not report a
+   service-account connection as consented; verify access through the selected
+   Material operation. Studio and TKL still require native caller authentication.
 3. In Studio at `/web/nict-editing-studio`, explicitly search, select and inspect
    the logical Material, then read its selected original. Supported raster
    content can be previewed; original bytes can be downloaded. No Candidate or

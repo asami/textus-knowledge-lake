@@ -123,6 +123,16 @@ to its component instance and provider-authenticated owner. Management is at
 be `/web/nict-editing-studio`. The connection owner authenticates at TKL too.
 There is no auth bridge or export/copy of an old Studio grant.
 
+Alternatively, TKL can explicitly select CNCF's server service-account strategy
+with `google-drive.service-account.configuration`, an opaque reference to a
+private configuration file. It is mutually exclusive with
+`oauth.connection.configuration`. The existing managed connection ID and
+Material Operations remain unchanged. The account's Drive permissions and
+configured `allowedSubjects` are independent of Material authorization.
+This strategy uses no browser consent or user impersonation. OAuth management
+continues to manage OAuth only; a successful Material read verifies the server
+connection for that caller and resource.
+
 Original reads stat and read exactly the configured resource, checking kind,
 parent, media and any declared length. Missing, revoked or mismatched resources
 fail explicitly. Invalid arguments, denied access, missing references,

@@ -2,13 +2,14 @@ package org.simplemodeling.textus.knowledgelake.impl
 
 import org.goldenport.cncf.component.{Component, ComponentCreate, ComponentDescriptor, ComponentId}
 import org.goldenport.cncf.config.ComponentParameterKey
+import org.goldenport.cncf.filestore.GoogleDriveConnectionRuntime
 import org.goldenport.cncf.oauth.OAuthConnectionRuntime
 import org.simplemodeling.textus.knowledgelake.KnowledgeLakeComponent
 import org.simplemodeling.textus.knowledgelake.material.{MaterialReferenceRuntime, MaterialRegistrationConfiguration, MaterialRegistrationRuntime}
 
 /*
  * @since   Oct. 21, 2026
- * @version Oct. 22, 2026
+ * @version Oct. 24, 2026
  */
 final class ComponentFactory extends Component.BundleFactory {
   override def primaryFactory: Component.PrimaryComponentFactory = KnowledgeLakePrimaryFactory
@@ -18,6 +19,7 @@ final class ComponentFactory extends Component.BundleFactory {
 abstract class KnowledgeLakeParticipantFactoryBase extends KnowledgeLakeComponent.Factory {
   override def initializationParameterDeclarations: Vector[ComponentParameterKey[?]] =
     super.initializationParameterDeclarations ++ Vector(OAuthConnectionRuntime.configurationKey,
+      GoogleDriveConnectionRuntime.configurationKey,
       MaterialReferenceRuntime.modeKey, MaterialReferenceRuntime.catalogKey, MaterialReferenceRuntime.registeredBindingsKey,
       MaterialRegistrationConfiguration.configurationKey)
 
@@ -27,7 +29,7 @@ abstract class KnowledgeLakeParticipantFactoryBase extends KnowledgeLakeComponen
   override val Material: KnowledgeLakeComponent.MaterialServiceFactory = new MaterialServiceFactory
 }
 
-class KnowledgeLakePrimaryComponent extends KnowledgeLakeComponent with OAuthConnectionRuntime with MaterialReferenceRuntime with MaterialRegistrationRuntime {
+class KnowledgeLakePrimaryComponent extends KnowledgeLakeComponent with GoogleDriveConnectionRuntime with MaterialReferenceRuntime with MaterialRegistrationRuntime {
   override def componentDescriptors: Vector[ComponentDescriptor] = super.componentDescriptors :+
     ComponentDescriptor(name = Some(KnowledgeLakeComponent.componentId.name),
       componentName = Some(KnowledgeLakeComponent.componentId.name), schemaVersion = Some(3),
