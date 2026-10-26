@@ -1,5 +1,13 @@
 # Knowledge Lake Architecture
 
+Current specification (2026-10-21):
+[Material access and processing](../spec/material-access-and-processing.md).
+One TKL component serves ordinary Workbench Material queries and OpenClaw
+continuation processing over shared Material facts. Domain editors normally
+use Workbench work operations. Earlier direct ingestion/admission arrows below
+are historical proposals where they bypass Workbench's human Candidate
+lifecycle; the current specification takes precedence.
+
 ## Current decision
 
 **Textus Knowledge Lake (TKL) itself is the Knowledge Lake.**

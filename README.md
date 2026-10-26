@@ -1,5 +1,20 @@
 # Textus Knowledge Lake (TKL)
 
+## Current direction — 2026-10-21
+
+TKL provides the logical Knowledge Lake interface: ordinary Material access and
+OpenClaw continuation processing in one component. Drive is a physical provider.
+Workbench composes TKL's public APIs and supplies common work/Candidate operations
+to Studio and other domain editors. Queries need no running OpenClaw worker.
+See the [specification](docs/spec/material-access-and-processing.md) and
+[development plan](docs/phase/material-access-and-processing-plan.md).
+
+The ingestion-only description below is historical. Its direct TKL-to-canonical-
+Information path is superseded by Workbench-managed human Candidate review and
+KnowledgeHub-owned admission. Storage is not the Knowledge Lake interface.
+
+## Historical ingestion-only proposal
+
 Textus Knowledge Lake is the **Knowledge Ingestion Application** that brings knowledge candidates, primarily prepared in an external Knowledge Lake, into the Textus World.
 
 The initial Knowledge Lake is Google Workspace. Raw and working materials remain there, and NotebookLM, Workspace AI, and humans perform primary knowledge processing. TKL begins at the boundary where those results become **Knowledge Candidates** for Textus.
