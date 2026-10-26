@@ -418,3 +418,14 @@ MaterialRegistrationResult
 | revision       | long   | 1            |
 | state          | string | 1            |
 | materialRef    | string | 1            |
+
+> MATERIAL PACKAGE V1 NOTE FOR CODEX
+>
+> Material is now distinguished from PreparedMaterial.
+> - Material: self-describing Knowledge Lake package, physically journaled, containing source/working assets and provenance.
+> - PreparedMaterial: preparation result Entity used for candidate extraction, with the existing stronger lifecycle/version semantics.
+> - KAR: PreparedMaterial transport/export artifact, not the Material package storage format.
+>
+> Design source: docs/notes/material-package-v1.md
+>
+> When native CML modeling is implemented, inspect current Cozy/CML grammar first and model Material / MaterialAsset / Provenance / lineage only with supported constructs. Do not invent syntax.

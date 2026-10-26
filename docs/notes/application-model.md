@@ -4,6 +4,14 @@
 - Status: Initial model
 - Scope: Application Use Cases + Phase 1 Application Workflow
 
+## Google Workspace backend and processing contexts (2026-10-02)
+
+The first implementation target is Google Workspace-backed TKL. Drive folders hold resources, canonical TKL metadata JSON and PreparedMaterial. Drive Project and Gemini Notebook are realizations of a provider-neutral Knowledge Processing Context, with purpose, source/version references, Existing Knowledge Context, processing history and output lineage. Contexts and storage folders are not fixed one-to-one.
+
+Notebook is available as a modeling option for preparation, analysis and synthesis as well as presentation. Drive Project remains the first implementation priority; Notebook integration is not required for the initial slice. Exact DTO/CML syntax and provider automation capabilities remain to be established.
+
+TKL proposes Raw Candidates to TKW and can prepare resources for an existing TKW candidate. TKW retains candidate formation, editing, review, approval and Admission. See [Google Workspace-backed TKL](google-workspace-backed-tkl.md) and [the decision journal](../journal/2026-10-02-google-workspace-backed-tkl-contexts.md).
+
 ## Modeling intent
 
 TKL の Use Case と Workflow を分離して CML で扱う。
@@ -197,7 +205,7 @@ Gmail               -> Mail Communication Provider
 Slack               -> Conversation Provider
 Drive Project       -> Saved context for Gemini in Drive preparation
 Gemini in Drive     -> Preparation processor
-Gemini Notebook     -> Optional content/presentation producer
+Gemini Notebook     -> Alternative Knowledge Processing Context (preparation/analysis/synthesis/presentation)
 Textus Knowledge Workbench -> Raw Candidate formation/review/approval consumer
 KnowledgeHub        -> downstream Knowledge runtime reached through Workbench
 ```
