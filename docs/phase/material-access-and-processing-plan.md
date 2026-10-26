@@ -10,6 +10,11 @@ added on 2026-10-24: TKL-owned configuration, preparation and registration for
 Android; Shared Drive first, with My Drive shared folders using the same contract.
 Its D01-D03 checklist supplies the mobile acceptance portion of M03.
 
+M01/M02 reference contract: [Material reference v1](../spec/material-reference-v1.md).
+Semantic selectors, first-Material bootstrap and TKL-owned OAuth handoff are
+specified there. Generated public bindings, executable implementation and
+acceptance remain pending; the OPEN entries below are not closed by drafting it.
+
 This is a Phase 1 workstream with its own delivery checklist. First deliver the
 reference path consumed by Workbench; do not require all OpenClaw processing or
 downstream KnowledgeHub admission before that handoff.

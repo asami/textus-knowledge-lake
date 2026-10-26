@@ -1,0 +1,4 @@
+# Use the project-declared generator runtime coordinate.
+development:
+  runtime:
+    enabled: false

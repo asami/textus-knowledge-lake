@@ -1,98 +1,420 @@
-# Textus Knowledge Lake CML Model
+# COMPONENT
 
-> NOTE FOR CODEX
->
-> This file is the canonical CML source location for the TKL application model.
-> Replace this scaffold with valid current CML syntax after checking the CML/Cozy implementation and existing examples.
-> Do not invent unsupported CML syntax.
->
-> Design source:
-> - docs/notes/application-model.md
-> - docs/notes/architecture.md
-> - docs/journal/2026-09-23-tkl-core-architecture-consolidation.md
->
-> Modeling intent:
-> - Model application-level Use Cases separately from execution Workflows.
-> - Keep future TKL Use Cases in the application model even when they are outside Phase 1.
-> - Phase 1 primary Use Case is "Propose Knowledge Candidate".
-> - The Phase 1 Application Workflow realizes that Use Case end-to-end through KnowledgeHub Admission.
-> - Derive/associate Application Capabilities where supported by current CML.
-> - Use current CML concepts for Use Case Slice / executable specification only if they are actually supported.
->
-> Primary application areas:
-> 1. Knowledge Acquisition
->    - Propose Knowledge Candidate [Phase 1 primary]
->    - Explore Candidates by Theme
->    - Discover Candidates from New Evidence
->    - Inspect Candidate Evidence
->    - Compare Candidate with Existing Knowledge
->    - Revise Candidate
->    - Submit Candidate for Admission
->    - Hold or Reject Candidate
-> 2. Research / Exploration
-> 3. Project Awareness
-> 4. Content Production
->
-> Phase 1 workflow outline:
-> Determine Knowledgeization Scope
-> -> Resolve Knowledge Resources
-> -> Collect Evidence
-> -> Normalize Evidence
-> -> Prepare Knowledge Material
-> -> Persist PreparedMaterial
-> -> Extract Knowledge Candidate
-> -> Compare Existing Knowledge
-> -> Compose Candidate Proposal
-> -> Human Review
-> -> Submit to KnowledgeHub Admission
->
-> Important domain concepts to align with the model:
-> - KnowledgeResource / provider-independent resource identity
-> - Evidence
-> - Communication Value Objects
-> - PreparedMaterial Entity
-> - KnowledgeCandidate
-> - Provenance / Lineage
-> - Admission boundary
->
-> Provider-specific Google Workspace / Slack details are implementation mappings,
-> not the semantic core of this CML model.
->
-> TODO(Codex):
-> - Inspect current CML grammar/model support and representative src/main/cozy/*.cml examples.
-> - Convert docs/notes/application-model.md into valid CML.
-> - Preserve the Use Case vs Workflow distinction.
-> - Keep Phase 1 scope explicit.
-> - Validate/generate with the repository's current Cozy/CML tooling.
+## KnowledgeLake
 
+### PACKAGE
 
-> KNOWLEDGE FEEDBACK NOTE FOR CODEX
->
-> Add Knowledge Feedback as a first-class application-use-case group in the native CML model where supported:
-> - Synchronize Knowledge Context
-> - Project Knowledge to Preparation Workspace
-> - Refresh Knowledge Context after Formation
-> - Trace Knowledge Formation
->
-> Existing acquisition/research/awareness use cases must use Existing Knowledge Context when relevant, especially the primary Raw Knowledge Candidate proposal flow.
->
-> Model the application loop:
-> KnowledgeHub -> TKL KnowledgeProjection -> Preparation -> Raw Candidate -> TKW -> KnowledgeHub.
+org.simplemodeling.textus.knowledgelake
 
+### STYLE
 
-> KNOWLEDGE PROJECTION SYNC NOTE FOR CODEX
->
-> Model the basic Knowledge Feedback synchronization capabilities/use cases where supported:
-> - append KnowledgeProjectionDelta for new/update/supersede changes;
-> - build/rebuild KnowledgeContextSnapshot from KnowledgeHub canonical current state;
-> - publish current snapshot + post-snapshot deltas to preparation workspaces;
-> - remove/deactivate obsolete projection context after rebuild.
->
-> Principle: append frequently, rebuild periodically.
+full-fledged-with-standalone
 
+### SUMMARY
 
-> GOOGLE WORKSPACE PRIORITY NOTE FOR CODEX
->
-> Treat Drive + Drive Project + Gemini in Drive as the standard Google Preparation route.
-> Gemini Notebook is optional presentation/production tooling and is NOT required by the core use case/workflow or Phase 1.
-> Do not introduce Notebook synchronization as a Phase 1 dependency.
+Logical Knowledge Lake Material access and explicit registration.
+
+### DESCRIPTION
+
+Knowledge Lake exposes logical Material search, metadata, original reads and
+explicit registration commands through the caller's CNCF execution context.
+Material references and resource selectors remain opaque to clients. Existing
+read-only Operations operate independently of OpenClaw processing and never
+initiate preparation. Registration commands require explicit registered mode
+and owning-host admission; their declaration does not establish runtime availability.
+
+# SERVICE
+
+## Material
+
+### SUMMARY
+
+Search and read authorized Materials, inspect registration status and explicitly register/materialize contributions.
+
+### OPERATION
+
+#### searchMaterials
+
+##### TYPE
+
+QUERY
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Return an authorized page of Material references and titles.
+
+##### DESCRIPTION
+
+Read-only, case-insensitive title/reference substring search. Text is at most
+256 characters. Offset defaults to 0 and must be nonnegative; limit defaults
+to 20 and must be between 1 and 100. Results use stable reference ordering.
+Paging and hasMore apply after caller authorization without disclosing
+unauthorized metadata. Empty results contain an empty items collection.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialSearchQuery
+
+######## EXTENDS
+
+QueryAction
+
+######## ATTRIBUTE
+
+| name   | type   | multiplicity |
+|--------|--------|--------------|
+| text   | string | ?            |
+| offset | int    | ?            |
+| limit  | int    | ?            |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialSearchResult
+
+#### getMaterial
+
+##### TYPE
+
+QUERY
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Resolve an opaque Material reference to authorized metadata.
+
+##### DESCRIPTION
+
+Accept the TKL-issued Material reference unchanged, including an existing
+Knowledge Lake URN. Caller admission and Material read authorization precede
+resource access. Return logical resources and attributed provenance without
+exposing physical storage or connection details.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialSelectionQuery
+
+######## EXTENDS
+
+QueryAction
+
+######## ATTRIBUTE
+
+| name        | type   | multiplicity |
+|-------------|--------|--------------|
+| materialRef | string | 1            |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialMetadata
+
+#### readOriginal
+
+##### TYPE
+
+QUERY
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Return one authorized logical original as a private binary response.
+
+##### DESCRIPTION
+
+Select the original using an opaque Material reference and its logical
+resourceId. Caller authentication, Operation admission and Material/resource
+read authorization precede connection lookup and outbound access. Return
+original bytes with the admitted media type and private/no-store, nosniff,
+sandbox and attachment headers. This read never initiates preparation or
+registration and never substitutes another resource on failure.
+
+##### INPUT
+
+###### VALUE
+
+####### OriginalSelectionQuery
+
+######## EXTENDS
+
+QueryAction
+
+######## ATTRIBUTE
+
+| name        | type   | multiplicity |
+|-------------|--------|--------------|
+| materialRef | string | 1            |
+| resourceId  | string | 1            |
+
+##### OUTPUT
+
+###### VALUE
+
+####### MaterialOriginalResult
+
+######## EXTENDS
+
+OperationResult
+
+######## ATTRIBUTE
+
+| name    | type | multiplicity |
+|---------|------|--------------|
+| content | blob | 1            |
+
+#### createMaterialRegistration
+
+##### TYPE
+
+COMMAND
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Persist a caller-authorized Prepared registration from one neutral contribution.
+
+##### DESCRIPTION
+
+Accept contribution as one complete textus.material-contribution/1 JSON value,
+retaining all source/provenance/document JSON and Unicode. Exact registered mode,
+an actual provider-authenticated caller and the owning host registration
+configuration are required. Authorize the configured subject before contribution,
+source or database access; validate bound source declarations locally without
+credential or provider IO. TKL selects location/storage binding, derives native
+principals and delegates native identity issuance and create authorization.
+Return registrationId, positive committed revision, state prepared and the planned
+materialRef only after durable native acknowledgement. The reference is unavailable
+until registered; obtain logical metadata through getMaterial after that status.
+No owner, URN, folder, connection, grant or destination is accepted from the caller.
+Absent configuration is service-unavailable; invalid source correspondence is
+argument-invalid. Native authorization/storage/uncertainty Conclusions propagate.
+An unacknowledged create is unresolved: never automatically retry or deduplicate
+by an App/business key. No provider read/write occurs. Result JSON projects
+registration_id/material_ref and exposes no private contribution or provider data.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialRegistrationCreateCommand
+
+######## EXTENDS
+
+CommandAction
+
+######## ATTRIBUTE
+
+| name         | type | multiplicity |
+|--------------|------|--------------|
+| contribution | json | 1            |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialRegistrationResult
+
+#### getMaterialRegistration
+
+##### TYPE
+
+QUERY
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Inspect the actual native caller-authorized registration status without provider access.
+
+##### DESCRIPTION
+
+Accept registrationId as the exact native-issued registration EntityId, distinct
+from the opaque Material URN, and validate its collection through native owner
+support. Require actual provider authentication, explicit registered mode and
+ordinary native read authorization. No registration/OAuth configuration or
+provider access is required. Return registrationId, the positive observed
+committed revision, actual state prepared/materializing/registered and assigned
+planned materialRef. Only registered makes the Material available through ordinary
+search/get/read; logical metadata then comes from getMaterial. Invalid selectors,
+missing/unauthorized records and native load failures retain their structured
+Conclusions. This query is the saved-status authority after uncertain commands;
+it performs no writes, credential lookup, preparation or mutation replay and
+does not authorize a retry. Result JSON uses registration_id/material_ref and
+contains no contribution, physical mappings, permissions or provider grants.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialRegistrationSelectionQuery
+
+######## EXTENDS
+
+QueryAction
+
+######## ATTRIBUTE
+
+| name           | type   | multiplicity |
+|----------------|--------|--------------|
+| registrationId | string | 1            |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialRegistrationResult
+
+#### materializeMaterial
+
+##### TYPE
+
+COMMAND
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Materialize one authorized Prepared registration after acknowledged native progress.
+
+##### DESCRIPTION
+
+Accept only registrationId, validated as the exact native registration EntityId
+and collection through owner support. Require actual provider authentication,
+explicit registered mode, owning host configuration, its allowed subject and
+ordinary native authorization. Load/authorize the actual record and reject
+non-Prepared state before private connection/provider access. Check retained
+storageBinding/location against current configuration without rebinding old
+records. Construct existing managed source/FileStore/writer capabilities without
+IO; native write authorization and acknowledged durable Materializing using the
+observed revision precede every external provider program. Execute the writer
+once, then persist Registered with confirmed private mappings using the actual
+returned Materializing revision. Return registrationId, positive committed
+revision, state registered and materialRef only after confirmed native persistence.
+Use getMaterial for logical metadata. Missing configuration is service-unavailable;
+state conflicts are structured operation-conflict. Native authorization, mapping,
+source/provider and save/uncertainty Conclusions propagate unchanged. A failure
+may retain Materializing and remote bytes, or an uncertain final acknowledgement
+may leave Registered. Inspect getMaterialRegistration for actual saved status;
+never automatically replay, reset or delete output. Result JSON projects
+registration_id/material_ref and contains no physical maps, credentials or grants.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialRegistrationMaterializeCommand
+
+######## EXTENDS
+
+CommandAction
+
+######## ATTRIBUTE
+
+| name           | type   | multiplicity |
+|----------------|--------|--------------|
+| registrationId | string | 1            |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialRegistrationResult
+
+# VALUE
+
+## MaterialSearchResult
+
+### Attribute
+
+| name    | type            | multiplicity |
+|---------|-----------------|--------------|
+| items   | MaterialSummary | *            |
+| offset  | int             | 1            |
+| limit   | int             | 1            |
+| hasMore | boolean         | 1            |
+
+## MaterialMetadata
+
+### Attribute
+
+| name        | type               | multiplicity |
+|-------------|--------------------|--------------|
+| materialRef | string             | 1            |
+| title       | string             | 1            |
+| resources   | MaterialResource   | *            |
+| provenance  | MaterialProvenance | *            |
+
+## MaterialSummary
+
+### Attribute
+
+| name        | type   | multiplicity |
+|-------------|--------|--------------|
+| materialRef | string | 1            |
+| title       | string | 1            |
+
+## MaterialResource
+
+### Attribute
+
+| name       | type   | multiplicity |
+|------------|--------|--------------|
+| resourceId | string | 1            |
+| role       | string | 1            |
+| mediaType  | string | 1            |
+| byteLength | long   | ?            |
+
+## MaterialProvenance
+
+### Attribute
+
+| name      | type   | multiplicity |
+|-----------|--------|--------------|
+| kind      | string | 1            |
+| reference | string | 1            |
+
+## MaterialRegistrationResult
+
+### Attribute
+
+| name           | type   | multiplicity |
+|----------------|--------|--------------|
+| registrationId | string | 1            |
+| revision       | long   | 1            |
+| state          | string | 1            |
+| materialRef    | string | 1            |
