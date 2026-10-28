@@ -103,6 +103,14 @@ Accept the TKL-issued Material reference unchanged, including an existing
 Knowledge Lake URN. Caller admission and Material read authorization precede
 resource access. Return logical resources and attributed provenance without
 exposing physical storage or connection details.
+Optional evidenceResourceIds explicitly requests resource-scoped source-version
+observations around complete original reads. Omission or an empty collection
+retains metadata-only behavior. IDs must be distinct, at most 128, and each
+nonempty and at most 256 characters without controls. Every original is resolved
+under the caller before reading any selected original. Known unchanged versions
+return available evidence; unknown versions remain unverified without revision.
+Changed originals fail without partial observations, fallback or business writes.
+An observation promises neither version-pinned access nor retention.
 
 ##### INPUT
 
@@ -116,9 +124,10 @@ QueryAction
 
 ######## ATTRIBUTE
 
-| name        | type   | multiplicity |
-|-------------|--------|--------------|
-| materialRef | string | 1            |
+| name                | type   | multiplicity |
+|---------------------|--------|--------------|
+| materialRef         | string | 1            |
+| evidenceResourceIds | string | *            |
 
 ##### OUTPUT
 
@@ -372,12 +381,26 @@ MaterialRegistrationResult
 
 ### Attribute
 
-| name        | type               | multiplicity |
-|-------------|--------------------|--------------|
-| materialRef | string             | 1            |
-| title       | string             | 1            |
-| resources   | MaterialResource   | *            |
-| provenance  | MaterialProvenance | *            |
+| name             | type                        | multiplicity |
+|------------------|-----------------------------|--------------|
+| materialRef      | string                      | 1            |
+| title            | string                      | 1            |
+| resources        | MaterialResource            | *            |
+| provenance       | MaterialProvenance          | *            |
+| observedEvidence | MaterialEvidenceObservation | *            |
+
+## MaterialEvidenceObservation
+
+### Attribute
+
+| name           | type   | multiplicity |
+|----------------|--------|--------------|
+| evidenceRef    | string | 1            |
+| materialRef    | string | 1            |
+| resourceId     | string | 1            |
+| revision       | string | ?            |
+| retrievalState | string | 1            |
+| limitation     | string | 1            |
 
 ## MaterialSummary
 
@@ -418,6 +441,8 @@ MaterialRegistrationResult
 | revision       | long   | 1            |
 | state          | string | 1            |
 | materialRef    | string | 1            |
+
+### DESCRIPTION
 
 > MATERIAL PACKAGE V1 NOTE FOR CODEX
 >

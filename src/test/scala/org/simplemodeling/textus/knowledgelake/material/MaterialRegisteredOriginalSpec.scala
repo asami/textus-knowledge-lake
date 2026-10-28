@@ -26,7 +26,7 @@ import org.simplemodeling.textus.knowledgelake.KnowledgeLakeComponent
  * Synthetic custody and HTTP evidence do not establish real Google acceptance.
  *
  * @since   Oct. 22, 2026
- * @version Oct. 22, 2026
+ * @version Oct. 28, 2026
  */
 final class MaterialRegisteredOriginalSpec extends AnyWordSpec with Matchers with GivenWhenThen
     with ConclusionMatchers with MaterialRegistrationPostgresqlSpec {
@@ -34,6 +34,83 @@ final class MaterialRegisteredOriginalSpec extends AnyWordSpec with Matchers wit
   import MaterialRegisteredOriginalSpec.*
 
   "Registered Material original" should {
+    "observe source evidence after native authorization" which {
+      "return exact source versions while keeping registration revisions rows and original materialization unchanged" in {
+        Given("one normally Registered PostgreSQL Material and its admitted existing original read binding")
+        withDatabase(native_container) { database => withSession(database, _parameters(), prepare = _prepare()) { session =>
+          val seed = _seed(session)
+          val before = database.snapshot()
+          val custody = _custody(session.root)
+          val effects = seed.destination.events -> seed.source.calls
+          val versioned = _replace(_metadata(seed), "version", Json.fromString("117"))
+          val driver = new MaterialReferenceFixture.Driver(Vector(MaterialReferenceFixture.jsonResponse(versioned),
+            MaterialReferenceFixture.mediaResponse(content = png), MaterialReferenceFixture.jsonResponse(versioned)))
+          When("getMaterial explicitly requests evidence for the retained detail original through native owner and UOW dispatch")
+          val result = MaterialReferenceFixture.record(session.query("getMaterial", Vector("materialRef" -> seed.reference,
+            "evidenceResourceIds" -> Vector("detail")), driver = Some(driver)))
+          Then("the source version is separate from registration revision three and no materialization or native write occurs")
+          val observation = result.getAsC[Vector[org.goldenport.record.Record]]("observedEvidence").TAKE.get.head
+          observation.getString("materialRef") shouldBe Some(seed.reference)
+          observation.getString("resourceId") shouldBe Some("detail")
+          observation.getString("revision") shouldBe Some("117")
+          observation.getString("retrievalState") shouldBe Some("available")
+          driver.calls.map(_.path) shouldBe Vector(_metadata_url(seed.file.reference.key), _media_url(seed.file.reference.key),
+            _metadata_url(seed.file.reference.key))
+          take(session.get(seed.snapshot.entity.id)).revision.value shouldBe 3L
+          database.snapshot() shouldBe before
+          _custody(session.root) shouldBe custody
+          (seed.destination.events -> seed.source.calls) shouldBe effects
+          _private_markers(seed).foreach(marker => result.print should not include marker)
+
+          Given("the same readable original without provider versions")
+          val unversioned = new MaterialReferenceFixture.Driver(Vector(MaterialReferenceFixture.jsonResponse(_metadata(seed)),
+            MaterialReferenceFixture.mediaResponse(content = png), MaterialReferenceFixture.jsonResponse(_metadata(seed))))
+          When("a fresh explicit observation completes through the same registration")
+          val unknown = MaterialReferenceFixture.record(session.query("getMaterial", Vector("materialRef" -> seed.reference,
+            "evidenceResourceIds" -> Vector("detail")), driver = Some(unversioned)))
+            .getAsC[Vector[org.goldenport.record.Record]]("observedEvidence").TAKE.get.head
+          Then("the native registration revision never fills a missing source version")
+          unknown.getString("revision") shouldBe None
+          unknown.getString("retrievalState") shouldBe Some("unverified")
+          database.snapshot() shouldBe before
+          (seed.destination.events -> seed.source.calls) shouldBe effects
+        } }
+      }
+
+      "keep metadata provider-independent and reject missing originals or foreign callers before private source access" in {
+        Given("a durable Registered Material with configured read bindings but absent provider credentials")
+        withDatabase(native_container) { database => withSession(database, _parameters(), prepare = _prepare("absent")) { session =>
+          val seed = _seed(session)
+          val before = database.snapshot()
+          val driver = new MaterialReferenceFixture.Driver(Vector.empty)
+          When("the owner uses legacy metadata or explicitly empty evidence")
+          val legacy = MaterialReferenceFixture.record(session.query("getMaterial", Vector("materialRef" -> seed.reference), driver = Some(driver)))
+          val explicit = MaterialReferenceFixture.record(session.query("getMaterial", Vector("materialRef" -> seed.reference,
+            "evidenceResourceIds" -> Vector.empty[String]), driver = Some(driver)))
+          Then("the exact four-field metadata projection remains independent of provider access")
+          legacy shouldBe explicit
+          legacy.fields.map(_.key).toSet shouldBe Set("materialRef", "title", "resources", "provenance")
+          driver.calls shouldBe empty
+
+          Vector("missing", "review").foreach { resource =>
+            When("the owner's selection includes a valid original followed by an unknown or derived resource")
+            val result = session.query("getMaterial", Vector("materialRef" -> seed.reference,
+              "evidenceResourceIds" -> Vector("detail", resource)), driver = Some(driver))
+            Then("the entire logical selection is rejected before credentials rather than partly reading detail")
+            failure(result).observation.taxonomy shouldBe Taxonomy.resourceNotFound
+            driver.calls shouldBe empty
+          }
+          When("a different admitted native subject requests known source evidence")
+          val foreign = session.query("getMaterial", Vector("materialRef" -> seed.reference,
+            "evidenceResourceIds" -> Vector("detail")), session = Some("foreign-session"), driver = Some(driver))
+          Then("native row permissions hide the Material and source versions before provider lookup")
+          failure(foreign).observation.taxonomy shouldBe Taxonomy.resourceNotFound
+          driver.calls shouldBe empty
+          database.snapshot() shouldBe before
+        } }
+      }
+    }
+
     "read only the confirmed authorized original" which {
       "retain exact bytes Bag headers native record and custody through reads and a fresh runtime" in {
         Given("durable PostgreSQL and an explicitly registered owning component with synthetic private custody and a read binding")

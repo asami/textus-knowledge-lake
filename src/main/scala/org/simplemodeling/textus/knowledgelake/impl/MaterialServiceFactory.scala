@@ -20,7 +20,7 @@ import org.simplemodeling.model.datatype.EntityId
 
 /*
  * @since   Oct. 21, 2026
- * @version Oct. 25, 2026
+ * @version Oct. 28, 2026
  */
 private[knowledgelake] final class MaterialServiceFactory extends KnowledgeLakeComponent.MaterialServiceFactory {
   import KnowledgeLakeComponent.MaterialService.*
@@ -169,6 +169,52 @@ private[knowledgelake] object MaterialServiceFactory {
       "provenance" -> Vector(Record.data("kind" -> "registration", "reference" -> record.id.value)))
   }
 
+  private def _selected_resources(ids: Vector[String], resources: Vector[MaterialResourceBinding]):
+      Consequence[Vector[MaterialResourceBinding]] = {
+    ids.foldLeft(Consequence.success(Vector.empty[MaterialResourceBinding]): Consequence[Vector[MaterialResourceBinding]]) {
+      (previous, id) => for {
+        selected <- previous
+        resource <- resources.find(_.resourceid == id).fold[Consequence[MaterialResourceBinding]](
+          Consequence.resourceNotFound("Material resource was not found"))(Consequence.success)
+      } yield selected :+ resource
+    }
+  }
+
+  private def _registered_resource(core: ActionCall.Core, record: MaterialRegistrationRecord, resourceid: String):
+      Consequence[(MaterialResourceBinding, String)] = {
+    val document = record.document
+    for {
+      index <- Option(document.contribution.originals.indexWhere(_.resourceId == resourceid)).filter(_ >= 0)
+        .fold[Consequence[Int]](Consequence.resourceNotFound("Material resource was not found"))(Consequence.success)
+      binding <- core.component.collect { case runtime: MaterialReferenceRuntime => runtime }
+        .flatMap(_._material_read_binding(document.storageBinding))
+        .fold[Consequence[MaterialReferenceRuntime.ReadBinding]](
+          Consequence.serviceUnavailable("Registered Material original access is unavailable"))(Consequence.success)
+      stored <- document.stored.fold[Consequence[MaterialRegistrationDocument.Stored]](_invalid)(Consequence.success)
+      _ <- if ((Vector(stored.root, stored.manifest) ++ stored.files.flatMap(file => Vector(file.reference, file.parent)))
+        .forall(_.store == binding.storename)) Consequence.unit else _invalid
+      file <- stored.files.lift(index).fold[Consequence[MaterialRegistrationDocument.File]](_invalid)(Consequence.success)
+      original = document.contribution.originals(index)
+    } yield MaterialResourceBinding(original.resourceId, original.mediaType, Some(original.byteLength),
+      MaterialStorage(binding.connectionid, file.reference.key, file.parent.key)) -> binding.storename
+  }
+
+  private def _observed_metadata(core: ActionCall.Core, materialref: String, metadata: Record,
+      resources: Vector[(MaterialResourceBinding, String)]): ExecUowM[Record] = {
+    if (resources.isEmpty) _package_pure(Consequence.success(metadata))
+    else for {
+      _ <- _package_pure(_connection_configured(core, "Material original connection is unavailable"))
+      observed <- resources.foldLeft(_package_pure(Consequence.success(Vector.empty[Record]))) {
+        case (previous, (resource, storename)) => for {
+          accumulated <- previous
+          credentials <- _package_pure(GoogleDriveCredentials.managedConnectionC(resource.storage.connectionid))
+          store <- _package_pure(GoogleDriveFileStore.createC(storename, credentials))
+          observation <- MaterialEvidenceObservation.observe(materialref, resource, store)
+        } yield accumulated :+ observation
+      }
+    } yield metadata ++ Record.data("observedEvidence" -> observed)
+  }
+
   private final case class SearchCall(core: ActionCall.Core, override val action: MaterialSearchQuery)
       extends SearchMaterialsActionCall with MaterialRegistrationSupport {
     protected def build_Program: ExecUowM[OperationResponse] = for {
@@ -191,14 +237,32 @@ private[knowledgelake] object MaterialServiceFactory {
     protected def build_Program: ExecUowM[OperationResponse] = for {
       query <- exec_from(dto.MaterialSelectionQuery.createC(action.request.toRecord))
       _ <- exec_from(_selector(query.materialRef, 2048))
+      ids <- exec_from(MaterialEvidenceObservation.selectionC(query.evidenceResourceIds))
       mode <- exec_from(_mode(core))
       result <- mode match {
         case MaterialReferenceRuntime.Mode.Bootstrap => for {
           admitted <- exec_from(_catalog(core))
           entry <- exec_from(admitted._2.resolve(admitted._1, query.materialRef))
-        } yield entry.metadata
-        case MaterialReferenceRuntime.Mode.Registered => get_registered_material(query.materialRef).map(_registered_metadata)
-        case MaterialReferenceRuntime.Mode.Packages => _package_get(core, query.materialRef).map(_.metadata)
+          resources <- exec_from(_selected_resources(ids, entry.resources))
+          metadata <- _observed_metadata(core, query.materialRef, entry.metadata, resources.map(_ -> "knowledge-lake-originals"))
+        } yield metadata
+        case MaterialReferenceRuntime.Mode.Registered => for {
+          record <- get_registered_material(query.materialRef)
+          _ <- exec_from(if (ids.forall(id => record.document.contribution.originals.exists(_.resourceId == id))) Consequence.unit
+            else Consequence.resourceNotFound("Material resource was not found"))
+          resources <- exec_from(ids.foldLeft[Consequence[Vector[(MaterialResourceBinding, String)]]](
+              Consequence.success(Vector.empty)) { (previous, id) => for {
+            selected <- previous
+            resource <- _registered_resource(core, record, id)
+          } yield selected :+ resource })
+          metadata <- _observed_metadata(core, query.materialRef, _registered_metadata(record), resources)
+        } yield metadata
+        case MaterialReferenceRuntime.Mode.Packages => for {
+          snapshot <- _package_get(core, query.materialRef)
+          resources <- exec_from(_selected_resources(ids, snapshot.originals.map(_.binding)))
+          metadata <- _observed_metadata(core, query.materialRef, snapshot.metadata,
+            resources.map(resource => resource -> snapshot.originals.find(_.resourceid == resource.resourceid).get.reference.store))
+        } yield metadata
       }
     } yield OperationResponse.RecordResponse(result)
   }
@@ -226,21 +290,8 @@ private[knowledgelake] object MaterialServiceFactory {
 
     private def _read_registered(query: dto.OriginalSelectionQuery): ExecUowM[OperationResponse] = for {
       record <- get_registered_material(query.materialRef)
-      document = record.document
-      index <- exec_from(Option(document.contribution.originals.indexWhere(_.resourceId == query.resourceId)).filter(_ >= 0)
-        .fold[Consequence[Int]](Consequence.resourceNotFound("Material resource was not found"))(Consequence.success))
-      binding <- exec_from(core.component.collect { case runtime: MaterialReferenceRuntime => runtime }
-        .flatMap(_._material_read_binding(document.storageBinding))
-        .fold[Consequence[MaterialReferenceRuntime.ReadBinding]](
-          Consequence.serviceUnavailable("Registered Material original access is unavailable"))(Consequence.success))
-      stored <- exec_from(document.stored.fold[Consequence[MaterialRegistrationDocument.Stored]](_invalid)(Consequence.success))
-      _ <- exec_from(if ((Vector(stored.root, stored.manifest) ++ stored.files.flatMap(file => Vector(file.reference, file.parent)))
-        .forall(_.store == binding.storename)) Consequence.unit else _invalid)
-      file <- exec_from(stored.files.lift(index).fold[Consequence[MaterialRegistrationDocument.File]](_invalid)(Consequence.success))
-      original = document.contribution.originals(index)
-      resource = MaterialResourceBinding(original.resourceId, original.mediaType, Some(original.byteLength),
-        MaterialStorage(binding.connectionid, file.reference.key, file.parent.key))
-      result <- _read_resource(resource, binding.storename)
+      selected <- exec_from(_registered_resource(core, record, query.resourceId))
+      result <- _read_resource(selected._1, selected._2)
     } yield result
 
     private def _read_package(query: dto.OriginalSelectionQuery): ExecUowM[OperationResponse] = for {

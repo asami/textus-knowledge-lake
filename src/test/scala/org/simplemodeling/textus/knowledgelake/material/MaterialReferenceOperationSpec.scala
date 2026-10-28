@@ -1,6 +1,7 @@
 package org.simplemodeling.textus.knowledgelake.material
 
 import org.goldenport.cncf.action.QueryAction
+import io.circe.Json
 import org.goldenport.observation.Taxonomy
 import org.goldenport.record.Record
 import org.scalatest.GivenWhenThen
@@ -9,12 +10,122 @@ import org.scalatest.wordspec.AnyWordSpec
 
 /*
  * @since   Oct. 21, 2026
- * @version Oct. 22, 2026
+ * @version Oct. 28, 2026
  */
 final class MaterialReferenceOperationSpec extends AnyWordSpec with Matchers with GivenWhenThen {
   import MaterialReferenceFixture.*
 
   "Native Material query factory" should {
+    "explicit source evidence through existing getMaterial" which {
+      "observe the exact selected original version without another public Operation or byte disclosure" in {
+        Given("a caller-authorized Material and managed source reporting the same version around a complete binary read")
+        withSession() { session =>
+          val versioned = replace(metadata, "version", Json.fromString("17"))
+          val driver = new Driver(Vector(jsonResponse(versioned), mediaResponse(), jsonResponse(versioned)))
+          val before = session.custody
+          When("the caller explicitly requests one logical original's evidence through generated getMaterial")
+          val result = record(session.execute("getMaterial", Vector("materialRef" -> materialRef,
+            "evidenceResourceIds" -> Vector(resourceId)), driver = driver))
+          Then("metadata adds one typed logical version observation and retains provider/private custody boundaries")
+          val observation = result.getAsC[Vector[Record]]("observedEvidence").TAKE.get.head
+          observation.getString("materialRef") shouldBe Some(materialRef)
+          observation.getString("resourceId") shouldBe Some(resourceId)
+          observation.getString("revision") shouldBe Some("17")
+          observation.getString("retrievalState") shouldBe Some("available")
+          org.simplemodeling.textus.knowledgelake.value.MaterialMetadata.createC(result).TAKE
+            .observedEvidence.head.revision shouldBe Some("17")
+          driver.calls.map(_.path) shouldBe Vector(metadataUrl, mediaUrl, metadataUrl)
+          driver.calls.map(_.method).distinct shouldBe Vector("GET")
+          privateMarkers.foreach(marker => result.print should not include marker)
+          result.getString("content") shouldBe None
+          session.custody shouldBe before
+        }
+      }
+
+      "retain exact metadata-only compatibility for omitted and explicit empty evidence selections" in {
+        Given("an initialized Material catalog without credentials or any provider grant")
+        withSession(connection = "absent") { session =>
+          val driver = new Driver(Vector.empty)
+          When("a legacy caller omits evidence and another supplies an empty collection")
+          val omitted = record(session.execute("getMaterial", Vector("materialRef" -> materialRef), driver = driver))
+          val explicit = record(session.execute("getMaterial", Vector("materialRef" -> materialRef,
+            "evidenceResourceIds" -> Vector.empty[String]), driver = driver))
+          Then("both results have the old four fields and require no original access")
+          explicit shouldBe omitted
+          explicit.fields.map(_.key).toSet shouldBe Set("materialRef", "title", "resources", "provenance")
+          org.simplemodeling.textus.knowledgelake.value.MaterialMetadata.createC(omitted).TAKE.observedEvidence shouldBe empty
+          driver.calls shouldBe Vector.empty
+          session.acquisitions shouldBe 0
+        }
+      }
+
+      "return unverified evidence when readable originals have no source version" in {
+        Given("an admitted original whose provider metadata has no source version")
+        withSession() { session =>
+          val driver = new Driver(Vector(jsonResponse(metadata), mediaResponse(), jsonResponse(metadata)))
+          When("getMaterial explicitly observes that original")
+          val result = record(session.execute("getMaterial", Vector("materialRef" -> materialRef,
+            "evidenceResourceIds" -> Vector(resourceId)), driver = driver))
+          Then("readable bytes alone do not become versioned or review-ready evidence")
+          val observation = result.getAsC[Vector[Record]]("observedEvidence").TAKE.get.head
+          observation.getString("retrievalState") shouldBe Some("unverified")
+          observation.getString("revision") shouldBe None
+          observation.getString("snapshotRef") shouldBe None
+          driver.calls should have size 3
+        }
+      }
+
+      "reject all missing or invalid selected originals before custody or any original provider access" in {
+        Given("a valid logical Material with no connection configuration")
+        withSession(connection = "absent") { session =>
+          val invalid = Vector(Vector(resourceId, resourceId), Vector(""), Vector("bad\nresource"),
+            Vector("x" * 257), (0 to 128).map(index => s"resource-$index").toVector)
+          val missing = Vector(Vector("missing"), Vector(resourceId, "missing"))
+          (invalid.map(_ -> Taxonomy.argumentInvalid) ++ missing.map(_ -> Taxonomy.resourceNotFound)).foreach { case (ids, taxonomy) =>
+            val driver = new Driver(Vector.empty)
+            When("getMaterial resolves the complete explicit logical selection")
+            val result = session.execute("getMaterial", Vector("materialRef" -> materialRef,
+              "evidenceResourceIds" -> ids), driver = driver)
+            Then("selection failure cannot partly observe an earlier valid resource or open credentials")
+            failure(result).observation.taxonomy shouldBe taxonomy
+            driver.calls shouldBe empty
+            session.acquisitions shouldBe 0
+          }
+        }
+      }
+
+      "keep Material and anonymous caller admission ahead of evidence lookup" in {
+        Given("an unavailable provider connection and one owner's known logical Material")
+        withSession(connection = "absent") { session =>
+          Vector(Some("material-other-session") -> Taxonomy.securityPermissionDenied,
+            None -> Taxonomy.securityAuthenticationRequired).foreach { case (caller, taxonomy) =>
+            val driver = new Driver(Vector.empty)
+            When("a foreign or anonymous caller requests source observations")
+            val result = session.execute("getMaterial", Vector("materialRef" -> materialRef,
+              "evidenceResourceIds" -> Vector(resourceId)), sessionId = caller, driver = driver)
+            Then("source versions and connection availability remain undisclosed")
+            failure(result).observation.taxonomy shouldBe taxonomy
+            driver.calls shouldBe empty
+          }
+        }
+      }
+
+      "withhold the complete response after a version change instead of rereading automatically" in {
+        Given("the exact same sized original changing its source version during read")
+        withSession() { session =>
+          val first = replace(metadata, "version", Json.fromString("17"))
+          val last = replace(metadata, "version", Json.fromString("18"))
+          val driver = new Driver(Vector(jsonResponse(first), mediaResponse(), jsonResponse(last)))
+          When("getMaterial observes the changed post-read version")
+          val result = session.execute("getMaterial", Vector("materialRef" -> materialRef,
+            "evidenceResourceIds" -> Vector(resourceId)), driver = driver)
+          Then("no successful old or partial evidence is available and only one read occurred")
+          failure(result).observation.taxonomy shouldBe Taxonomy.resourceInvalid
+          driver.calls.map(_.path) shouldBe Vector(metadataUrl, mediaUrl, metadataUrl)
+        }
+      }
+    }
+
     "logical search and metadata" which {
       "dispatch all three generated queries through the real owning factory" in {
         Given("a normal initialized participant with the synthetic ingress provider and a trusted catalog")

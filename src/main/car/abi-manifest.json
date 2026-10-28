@@ -99,6 +99,45 @@
           "type" : "MaterialProvenance",
           "multiplicity" : "*",
           "required" : false
+        }, {
+          "name" : "observedEvidence",
+          "type" : "MaterialEvidenceObservation",
+          "multiplicity" : "*",
+          "required" : false
+        } ]
+      }, {
+        "name" : "MaterialEvidenceObservation",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "evidenceRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "materialRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "resourceId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "revision",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "retrievalState",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "limitation",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
         } ]
       }, {
         "name" : "MaterialSummary",
@@ -203,6 +242,11 @@
           "type" : "string",
           "multiplicity" : "1",
           "required" : true
+        }, {
+          "name" : "evidenceResourceIds",
+          "type" : "string",
+          "multiplicity" : "*",
+          "required" : false
         } ]
       }, {
         "name" : "OriginalSelectionQuery",

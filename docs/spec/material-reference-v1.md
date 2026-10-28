@@ -18,7 +18,7 @@ These are domain Operations, not Drive API wrappers.
 | Operation | Input | Output |
 | --- | --- | --- |
 | `searchMaterials` | `MaterialSearch(text?, offset?, limit?)` | `MaterialSearchResult(items, offset, limit, hasMore)` |
-| `getMaterial` | `MaterialSelection(materialRef)` | `MaterialMetadata(materialRef, title, resources, provenance)` |
+| `getMaterial` | `MaterialSelection(materialRef, evidenceResourceIds*)` | `MaterialMetadata(materialRef, title, resources, provenance, observedEvidence*)` |
 | `readOriginal` | `OriginalSelection(materialRef, resourceId)` | Private binary original response with the resource's admitted media type |
 
 `materialRef` is an opaque TKL-issued Material reference, including an existing
@@ -32,6 +32,30 @@ file ID, folder name or client-chosen URL. A resource description contains
 `resourceId`, `role`, `mediaType` and optional `byteLength`; metadata contains
 logical references and attributed provenance, never credentials/provider paths.
 Search items contain only `materialRef` and `title`. Empty results use `items=[]`.
+
+### Additive resource evidence observation — 2026-10-28
+
+[Material evidence observation v1](material-evidence-observation-v1.md) defines
+the explicit `evidenceResourceIds` opt-in on existing `getMaterial`. Omission or
+an empty collection preserves the exact four-field metadata-only projection and
+does not read originals. A nonempty exact logical selection adds typed
+`observedEvidence` from complete original reads surrounded by source-version
+observations. Unknown versions remain unverified; changed resources fail.
+Source versions, native registration revisions and Candidate revisions remain
+distinct. Observation provides neither historical pinned bytes nor retention.
+
+The TKL-issued evidence identity includes an opaque resource-incarnation
+qualifier, so reconfiguring a logical resource to another backing original
+cannot reuse an evidence identity solely because both files have the same
+file-scoped source version. The qualifier is an identity digest, never a
+source version, content attestation or snapshot. Physical mappings remain private.
+
+Compatibility here means existing Operation identities, omitted/empty wire
+behavior and generated `createC` readers. At the development SNAPSHOT, generated
+Scala value constructors gain the additive collection parameter and require
+consumer regeneration/source adaptation where constructed positionally.
+Binary or positional-constructor compatibility is not claimed. Generated source
+is not hand-edited to create a second contract.
 
 Search is read-only, case-insensitive title/reference substring matching for
 this initial route. Text is at most 256 characters; offset defaults to 0 and
@@ -130,7 +154,8 @@ must be initialized before connection resolution. The connection remains with
 this TKL instance and its admitted actual caller; when OAuth is selected, its
 owner-bound user grant remains in that instance's custody. Native provider/custody
 Conclusions propagate without retries, writes or identity substitution.
-Public Operations, DTOs and ABI are unchanged. This read adapter
+Public Operation identities and ordinary binary transport are unchanged. The
+explicit evidence extension above is additive to the metadata DTO and ABI. This read adapter
 adds no public registration commands or M03 availability claim. Runtime source
 ingress/registration, composed Workbench/Studio registered activation, packaged
 and real Google evidence and connected whole Phase acceptance remain required.

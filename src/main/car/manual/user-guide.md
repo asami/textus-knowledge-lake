@@ -54,6 +54,30 @@ Consent and a connected status authorize neither the Material nor another
 subject. Metadata availability also does not prove that the original is
 currently accessible under the selected managed connection.
 
+## Explicit original-version evidence
+
+For editing review, request `getMaterial` with the same exact `materialRef` and
+the chosen logical `evidenceResourceIds` collection, for example `["cover"]`.
+These are typed Operation attribute names; use the host's existing request/JSON
+name convention. Omission or `[]` keeps ordinary metadata behavior and requires
+no original access. Do not supply provider IDs or a version chosen by the client.
+
+TKL reads every selected original completely and confirms its source version
+before and after. The result's `observedEvidence` retains selection order.
+Keep each issued `evidenceRef`, logical pair, exact `revision` when present,
+`retrievalState` and `limitation` together. `available` with revision describes
+that completed read, not an immutable snapshot, historical-access promise or
+future permission. An unverified observation has no revision and must not be
+promoted to review-ready evidence using a registration revision, local hash or
+clock. A changed-source failure requires a later explicit decision to observe
+again; this query does not automatically reread or update an editing target.
+
+The opaque evidence identity qualifies the actual backing-resource incarnation;
+do not derive it or interpret it as a provider path. The identity digest is not
+a content digest or source version. Keep normal original previews/downloads on
+`readOriginal`; observation results do not contain original bytes. Workbench
+retains responsibility for explicit Candidate update, Review and Approve.
+
 | Result | Operator next step |
 | --- | --- |
 | Unavailable capability or connection | Check the selected mode, owning assembly and TKL connection configuration. Bootstrap needs its admitted catalog; registered reads need the exact storage-binding alias. An absent catalog differs from an explicitly empty authorized catalog. |

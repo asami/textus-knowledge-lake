@@ -22,7 +22,7 @@ import org.simplemodeling.textus.knowledgelake.impl.KnowledgeLakePrimaryFactory
 /** Logical package access through the owning native factory, ingress, ActionCall and UOW.
   * Controlled responses contain no real cloud credentials or SQL mutations.
   * @since Oct. 25, 2026
-  * @version Oct. 25, 2026
+  * @version Oct. 28, 2026
   */
 final class MaterialPackageReferenceSpec extends AnyWordSpec with Matchers with GivenWhenThen {
   import MaterialPackageReadSpec.*
@@ -31,6 +31,62 @@ final class MaterialPackageReferenceSpec extends AnyWordSpec with Matchers with 
   private val _selection: Vector[(String, Any)] = Vector("materialRef" -> reference, "resourceId" -> "image-1")
 
   "Native stored-package Material queries" should {
+    "observe selected originals through the unchanged logical operation" which {
+      "preserve requested resource order and independent source versions without exposing package placement" in {
+        Given("a trusted package with two selected originals and separate provider versions")
+        withSession(catalogText = None, referenceMode = "packages", packageCatalogText = Some(catalogJson().noSpaces)) { session =>
+          val image = replace(metadataJson(originalChildren.head), "version", Json.fromString("17"))
+          val audio = replace(metadataJson(originalChildren.last), "version", Json.fromString("31"))
+          val driver = new Driver(packageResponses() ++ Vector(jsonResponse(audio), mediaResponse("audio/ogg"), jsonResponse(audio),
+            jsonResponse(image), mediaResponse(), jsonResponse(image)))
+          val custody = session.custody
+          When("getMaterial explicitly requests audio then image observations through the normal owning ActionCall")
+          val result = record(session.execute("getMaterial", Vector("materialRef" -> reference,
+            "evidenceResourceIds" -> Vector("audio-1", "image-1")), driver = driver))
+          Then("the result keeps exact logical correspondence after complete reads without provider pointers or writes")
+          val observed = result.getAsC[Vector[Record]]("observedEvidence").TAKE.get
+          observed.map(_.getString("resourceId").get) shouldBe Vector("audio-1", "image-1")
+          observed.map(_.getString("revision").get) shouldBe Vector("31", "17")
+          observed.map(_.getString("retrievalState").get) shouldBe Vector("available", "available")
+          observed.map(_.getString("evidenceRef").get).distinct should have size 2
+          driver.calls.map(_.path) shouldBe _package_paths ++
+            Vector(_stat_path(audioRef), _media_path(audioRef), _stat_path(audioRef),
+              _stat_path(imageRef), _media_path(imageRef), _stat_path(imageRef))
+          driver.calls.map(_.method).distinct shouldBe Vector("GET")
+          privateMarkers.foreach(marker => result.print should not include marker)
+          session.custody shouldBe custody
+        }
+      }
+
+      "resolve the entire original selection before reading a valid earlier resource" in {
+        Given("a valid stored package and a selection also containing an unknown or derived resource")
+        Vector("missing", "capture").foreach { unknown =>
+          withSession(catalogText = None, referenceMode = "packages", packageCatalogText = Some(catalogJson().noSpaces)) { session =>
+            val driver = new Driver(packageResponses())
+            When("getMaterial resolves the valid image followed by the non-original selection")
+            val result = session.execute("getMaterial", Vector("materialRef" -> reference,
+              "evidenceResourceIds" -> Vector("image-1", unknown)), driver = driver)
+            Then("only bounded package metadata has been read and no original observation is partly performed")
+            failure(result).observation.taxonomy shouldBe Taxonomy.resourceNotFound
+            driver.calls.map(_.path) shouldBe _package_paths
+          }
+        }
+      }
+
+      "deny a foreign evidence request before package or connection lookup" in {
+        Given("a trusted package and an absent connection for a different admitted subject")
+        withSession(catalogText = None, connection = "absent", referenceMode = "packages", packageCatalogText = Some(catalogJson().noSpaces)) { session =>
+          val driver = new Driver(Vector.empty)
+          When("that subject asks the existing query for a known original's observation")
+          val result = session.execute("getMaterial", Vector("materialRef" -> reference,
+            "evidenceResourceIds" -> Vector("image-1")), sessionId = Some("material-other-session"), driver = driver)
+          Then("Material permission remains independent of provider credentials and the version stays hidden")
+          failure(result).observation.taxonomy shouldBe Taxonomy.securityPermissionDenied
+          driver.calls shouldBe empty
+        }
+      }
+    }
+
     "resolve the unchanged logical public contract" which {
       "bind all three existing queries to the owning native factory in explicit Packages mode" in {
         Given("the normal owning component initialized with only an explicit trusted package catalog")

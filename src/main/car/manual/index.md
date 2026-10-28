@@ -16,8 +16,21 @@ Operations. The remaining composed ingestion and processing gates are separate.
 | Authenticated-only QUERY Operation | Input | Output |
 | --- | --- | --- |
 | `searchMaterials` | `MaterialSearch(text?, offset?, limit?)` | `MaterialSearchResult(items, offset, limit, hasMore)` |
-| `getMaterial` | `MaterialSelection(materialRef)` | `MaterialMetadata(materialRef, title, resources, provenance)` |
+| `getMaterial` | `MaterialSelection(materialRef, evidenceResourceIds*)` | `MaterialMetadata(materialRef, title, resources, provenance, observedEvidence*)` |
 | `readOriginal` | `OriginalSelection(materialRef, resourceId)` | Private binary original with admitted media type |
+
+`getMaterial` remains metadata-only when evidenceResourceIds is absent or empty.
+Explicitly selecting at most 128 distinct exact logical original IDs requests
+complete read observations under the same caller. The additive observedEvidence
+items contain evidenceRef, materialRef, resourceId, optional revision,
+retrievalState and limitation. Available means the exact provider source version
+was observed unchanged around a complete original read; missing versions remain
+unverified without revision, and changed resources fail rather than returning
+partial evidence. The opaque evidenceRef qualifies the actual resource binding;
+it exposes no physical mapping. Its identity digest is never a source revision.
+No historical version-pinned access or retention is promised. Existing search
+and readOriginal behavior is preserved. The full source contract is
+`docs/spec/material-evidence-observation-v1.md` in the TKL checkout.
 
 | Authenticated-only registration Operation | Kind and input | Output |
 | --- | --- | --- |
