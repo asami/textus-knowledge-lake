@@ -49,4 +49,4 @@ TKL-D01 freezes the expected digest and reservation/file binding. TKL-D02 implem
 
 ## EAI handoff (2026-11-02)
 
-The [TKL–EAI ingestion plan](eai-material-ingestion-integration-plan.md) maps EAI-owned Drive upload sessions and private artifact operations onto D01–D03 without changing their closure criteria. Preserve mobile->Drive direct bytes and TKL-owned completion/admission; relay remains fallback. Existing direct-upload SHA-256 and reservation checks remain mandatory.
+See [TKL–EAI ingestion development proposal](../journal/2026-11-02-eai-ingestion-development-proposal.md). This is a journal proposal only; existing Phase acceptance and closure remain unchanged.
