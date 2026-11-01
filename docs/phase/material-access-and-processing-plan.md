@@ -56,4 +56,4 @@ registration, live account, acceptance record or Goal state.
 
 ## EAI integration follow-up (2026-11-02)
 
-For TKL-M03 and its D01–D03 mobile workstream, use [TKL–EAI Material ingestion integration plan](eai-material-ingestion-integration-plan.md) to assign provider mechanics and sandbox handling to EAI while TKL retains Material identity, authorization and admission. The existing direct-upload integrity and acceptance obligations remain OPEN until tested; this reference neither replaces nor closes them.
+See [TKL–EAI ingestion development proposal](../journal/2026-11-02-eai-ingestion-development-proposal.md). This is a journal proposal only; existing Phase acceptance and closure remain unchanged.
