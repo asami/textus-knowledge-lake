@@ -1,5 +1,10 @@
 # TKL mobile Material delivery workstream
 
+Successor: [Phase 2 EAI ingestion](phase-2.md) (planned 2026-11-02) aligns the
+EAI provider boundary with D01..D03. This is not an extra gate on the current
+mobile workstream. Preserve existing reservation/integrity acceptance and
+client-issued Material IDs; move provider mechanics only with a qualified handoff.
+
 status=planned
 planned_at=2026-10-24
 parent=Phase 1 / TKL-M03
@@ -33,14 +38,14 @@ Sequence: D01 contract -> D02 plus Core transfer -> TFAF/App composition -> D03
 connected acceptance. Implement and test the first end-to-end route as one
 coherent slice, then close its failure/recovery branches.
 
-Consumers: [Core](../../../textus-flutter-core/docs/phase/tkl-managed-material-delivery-plan.md),
-[TFAF](../../../textus-flutter-application-framework/docs/phase/tkl-managed-material-delivery-plan.md),
-[App Phase 6.3](../../../../Project2026/nict-editing-studio-app/docs/phase/phase-6.3.md).
+Consumers: [Core](https://github.com/asami/textus-flutter-core/blob/main/docs/phase/tkl-managed-material-delivery-plan.md),
+[TFAF](https://github.com/asami/textus-flutter-application-framework/blob/main/docs/phase/tkl-managed-material-delivery-plan.md),
+[App Phase 6.3](https://github.com/KnowledgeHubProject/nict-editing-studio-app/blob/main/docs/phase/phase-6.3.md).
 
 
 ## Direct new-file upload and SHA-256 verification — planned delta
 
-Contract and connected acceptance: [direct-upload integrity plan](../../../../Project2026/nict-editing-studio-app/docs/notes/direct-upload-integrity-plan.md).
+Contract and connected acceptance: [direct-upload integrity plan](https://github.com/KnowledgeHubProject/nict-editing-studio-app/blob/main/docs/notes/direct-upload-integrity-plan.md).
 
 TKL-D01 freezes the expected digest and reservation/file binding. TKL-D02 implements authenticated preparation with server-selected folder, stored SHA-256/length, service-account native provider calls and independent verification before registration. TKL-D03 closes mismatch/unknown/expiry and connected acceptance. Missing checksum is not success; client-reported success or arbitrary file IDs cannot register resources. Existing Phase 1 / TKL-M03 remains the parent.
 
@@ -49,4 +54,35 @@ TKL-D01 freezes the expected digest and reservation/file binding. TKL-D02 implem
 
 ## EAI handoff (2026-11-02)
 
-See [TKL–EAI ingestion development proposal](../journal/2026-11-02-eai-ingestion-development-proposal.md). This is a journal proposal only; existing Phase acceptance and closure remain unchanged.
+See [TKL–EAI ingestion development proposal](../journal/2026/2026-11-02-eai-ingestion-development-proposal.md). The proposal is now scheduled in [Phase 2](phase-2.md); existing Phase acceptance and closure remain unchanged.
+## Explicit untrusted-client acceptance — 2026-11-02
+
+TKL-D01..03 include the
+[UC-01..04 delivery conditions](../spec/tkl-managed-mobile-material-delivery.md#untrusted-client-admission-and-access--2026-11-02).
+Preserve existing evidence; close only the actual missing coverage.
+
+- [ ] UC-01: destination/preparation/status responses contain no server keys or
+  broadly privileged credential; bounded transfer capabilities stay out of logs.
+- [ ] UC-02: cross-user owner/Material/original/reservation substitutions deny
+  access or mutation; list/search and access-reference issuance reveal no
+  private originals. Explicitly permitted sharing still succeeds.
+- [ ] UC-03: no-upload success, wrong reserved contents and unavailable required
+  provider proof cannot register Material; cross-user completion is refused.
+  Positive verified upload and repeated finalization reconcile one registration.
+- [ ] UC-04: valid login cannot invoke forbidden Operations or use an allowed
+  Operation to exceed Material rights, even with server provider credentials.
+
+Coordinate with App ESA610-05/06/08, ESA7-01/05 and Server ESS5-02/05.
+CNCF owns generic enforcement, Core owns the shared client, and TKL owns these
+reservation/admission decisions. This is integrated acceptance, not four new
+review loops or a reopening of completed historical scopes.
+
+## Small-business baseline acceptance — 2026-11-02
+
+- [ ] SB-01..03 within TKL-D01..03: with ordinary provider provisioning, storage
+  is private by default and UC admission/access works without mobile technical
+  settings. Supported sharing choices match provider/link behavior; operator
+  duties and optional external equipment are explicit.
+
+Contract: [standard storage policy](../spec/tkl-managed-mobile-material-delivery.md#standard-storage-and-configurable-policy--2026-11-02).
+Reuse current acceptance; no new offline-media/HSM prerequisite.

@@ -99,9 +99,58 @@ Parent contract: [Material access and processing](material-access-and-processing
 
 ## Planned content-integrity extension
 
-The [direct-upload integrity plan](../../../../Project2026/nict-editing-studio-app/docs/notes/direct-upload-integrity-plan.md) adds
+The [direct-upload integrity plan](https://github.com/KnowledgeHubProject/nict-editing-studio-app/blob/main/docs/notes/direct-upload-integrity-plan.md) adds
 server-service-account Shared Drive new-file reservations and SHA-256
 verification before registration to the existing route. This is an explicitly
 authorized content-integrity use, not a management-hash ledger. Existing
 metadata/length-only confirmation does not establish this new acceptance.
 Status remains planned for this delta; preserve prior evidence and active work.
+
+## Untrusted-client admission and access — 2026-11-02
+
+The [UC-01..04 acceptance profile](https://github.com/asami/goldenport-cncf/blob/main/docs/spec/untrusted-client-material-acceptance.md)
+refines this delivery contract.
+
+- UC-01: keep provider service-account keys and server-wide credentials on the
+  server. Core receives only the permitted user/scoped transfer capability;
+  configuration/status never leaks privileged credentials or transfer secrets.
+- UC-02: derive or authorize owner/tenant bindings from CNCF's authenticated
+  subject and policy. Client owner fields are not authority. Apply the same
+  resource policy to prepare/status/finalize, Material queries, originals and
+  access-reference issuance. Cross-user references cannot retarget a reservation.
+- UC-03: a completion report is a claim, not provider proof. Before admission,
+  independently verify the reserved resource, expected size/content digest and
+  placement under the existing integrity contract. Missing/failed/unknown proof
+  cannot register the Material; a valid retry reconciles the existing delivery.
+  Do not add a client-supplied arbitrary file ID or verification-proof parameter.
+- UC-04: Operation access and Material/resource access remain separate. CNCF
+  provides enforcement/context propagation; TKL defines Material policies and
+  admission. Service-account storage access does not grant the external caller
+  access to arbitrary provider files.
+
+Accept with users A/B: a legitimate upload registers and can be read by its
+authorized owner; a fabricated success with no uploaded bytes, wrong reserved
+content, missing provider proof or B's reservation cannot register. Confirm
+stored state and no private original/access-link disclosure via direct API.
+Use provider-controlled fixtures for failure cases and reuse relevant live
+evidence with its limits; do not equate fixtures with actual Drive proof.
+
+TKL retains logical admission after EAI takes over provider mechanics in
+[Phase 2](../phase/phase-2.md). The migration must retain these outcomes and
+trusted provenance of verification results. No full EAI migration is required
+before the current mobile route can satisfy them.
+
+## Standard storage and configurable policy — 2026-11-02
+
+The [Textus baseline](https://github.com/asami/goldenport-cncf/blob/main/docs/spec/small-business-security-baseline-and-options.md) makes non-public customer
+storage, owner/resource enforcement and verified registration standard behavior.
+TKL/operator provisioning supplies the selected storage route; mobile users do
+not configure physical IDs or individual security guards.
+
+Supported sharing/processing/access choices are business policies applied to
+actual provider access and link issuance, not UI-only settings. Retention choices
+must respect permanent-Material semantics and cannot silently delete originals.
+External key custody/offline media require explicit provider/equipment support;
+they are not properties of the current online Drive route or standard-use gates.
+Standard deployment documentation identifies operator sharing/backup/restore
+duties and actual qualification rather than implying configuration is evidence.

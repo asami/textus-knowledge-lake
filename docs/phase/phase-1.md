@@ -1,5 +1,10 @@
 # Phase 1 — Knowledge Lake Material Access and Processing Reference Flow
 
+Successor planning — 2026-11-02: [Phase 2](phase-2.md) adds EAI-mediated mail and
+mobile ingestion as a separate delivery. It preserves this Phase's M03/D01..D03
+scope and evidence. Existing mobile acceptance does not wait for EAI; adopt its
+provider boundary only after the relevant handoff and regression proof.
+
 status=planned
 updated_at=2026-10-21
 spec=../spec/material-access-and-processing.md
