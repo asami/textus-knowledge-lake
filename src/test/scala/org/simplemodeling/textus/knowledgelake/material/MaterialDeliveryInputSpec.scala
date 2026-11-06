@@ -4,7 +4,7 @@ import io.circe.Json
 import scala.util.Using
 import org.goldenport.bag.{Bag, BinaryBag}
 import org.goldenport.datatype.{ContentType, MimeBody}
-import org.goldenport.protocol.{Property, Request}
+import org.goldenport.protocol.{Argument, Property, Request, Switch}
 import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -58,8 +58,8 @@ final class MaterialDeliveryInputSpec extends AnyWordSpec with Matchers with Giv
       Using.resource(retained.asInstanceOf[BinaryBag].openInputStream())(_.readAllBytes().toVector) shouldBe bytes.toVector
     }
 
-    "accept the MimeBody supplied by native multipart ingress" in {
-      Given("the native multipart parser representation of one uploaded image part")
+    "retain non-HTTP MimeBody and filename property compatibility" in {
+      Given("a non-HTTP caller supplying binary content and filename as named properties")
       val bytes = Array[Byte](0, -1, -128, 10, 0)
       val body = MimeBody(ContentType.parse("image/png"), Bag.binary(bytes))
       val request = _request("uploadOriginal", Vector("deliveryRef" -> "delivery-1", "resourceId" -> "cover",
@@ -75,13 +75,50 @@ final class MaterialDeliveryInputSpec extends AnyWordSpec with Matchers with Giv
       retained.TAKE.content.contentType shouldBe ContentType.IMAGE_PNG
       Using.resource(retained.TAKE.content.value.openInputStream())(_.readAllBytes().toVector) shouldBe bytes.toVector
     }
+    "keep non-HTTP argument and switch admission strict" in {
+      Given("a non-HTTP original with valid binary properties and metadata")
+      val body = MimeBody(ContentType.IMAGE_PNG, Bag.binary(Array[Byte](0, -1)))
+      val request = _request("uploadOriginal", Vector("deliveryRef" -> "delivery-1", "resourceId" -> "cover",
+        "content" -> body, "content.filename" -> "cover.png"))
+      val variants = Vector(
+        request.copy(arguments = List(Argument("content.filename", "cover.png"))),
+        request.copy(properties = request.properties.filterNot(_.name == "content.filename"),
+          arguments = List(Argument("content.filename", "cover.png"))),
+        request.copy(arguments = List(Argument("param1", "cover.png"))),
+        request.copy(arguments = List(Argument("unexpected", "extra"))),
+        request.copy(switches = List(Switch("extra", true, None))))
+      variants.foreach { candidate =>
+        When("a non-HTTP caller supplies arguments or switches")
+        val result = MaterialDeliveryOriginalInput.parseC(candidate)
+        Then("the HTTP metadata exception grants no non-HTTP argument admission")
+        result.isSuccess shouldBe false
+      }
+    }
+    "validate optional filename properties at the established length and control boundaries" in {
+      Given("non-HTTP original properties with optional untrusted filename metadata")
+      val body = MimeBody(ContentType.IMAGE_PNG, Bag.binary(Array[Byte](0, -1)))
+      val fields = Vector[(String, Any)]("deliveryRef" -> "delivery-1", "resourceId" -> "cover", "content" -> body)
+      val accepted = Vector("x", "x" * 2048, "表紙.png", "../../untrusted-name.png")
+      val rejected = Vector[Any]("", "x" * 2049, "nul\u0000.png", "line\nfeed.png", "del\u007f.png", "c1\u009f.png", 42)
+      When("the owning decoder checks the exact filename value without interpreting it as a path")
+      val valid = accepted.map(value => MaterialDeliveryOriginalInput.parseC(_request("uploadOriginal",
+        fields :+ ("content.filename" -> value))))
+      val invalid = rejected.map(value => MaterialDeliveryOriginalInput.parseC(_request("uploadOriginal",
+        fields :+ ("content.filename" -> value))))
+      Then("safe metadata retains spelling and malformed metadata fails admission")
+      valid.foreach(_.isSuccess shouldBe true)
+      invalid.foreach(_.isSuccess shouldBe false)
+    }
     "reject ambiguous or extra multipart fields before resource access" in {
       Given("native multipart content and invalid selector or metadata variants")
       val body = MimeBody(ContentType.IMAGE_PNG, Bag.binary(Array[Byte](0, -1)))
       val fields = Vector[(String, Any)]("deliveryRef" -> "delivery-1", "resourceId" -> "cover", "content" -> body)
       val variants = Vector(fields :+ ("resourceId" -> "other"), fields :+ ("destinationParentKey" -> "other"),
         fields.filterNot(_._1 == "content") :+ ("content" -> "/private/local-photo.png"),
-        fields :+ ("content.filename" -> 42))
+        fields :+ ("content.filename" -> 42),
+        fields ++ Vector("content.filename" -> "cover.png", "content.filename" -> "other.png"),
+        fields.filterNot(_._1 == "deliveryRef"), fields.filterNot(_._1 == "resourceId"),
+        fields :+ ("authorization" -> "untrusted"))
       variants.foreach { values =>
         When("the owning TKL input admits duplicate, unknown or non-binary properties")
         val result = MaterialDeliveryOriginalInput.parseC(_request("uploadOriginal", values))

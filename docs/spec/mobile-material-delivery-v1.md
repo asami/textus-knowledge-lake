@@ -54,16 +54,34 @@ logical pair together instead of inventing values.
 Original ingress selects the existing native multipart binary path. The
 compiled upload Action retains the native Request/Record, while its blob schema
 uses XBlob. TKL's MaterialDeliveryOriginalInput reads the native named Request
-properties: content is MimeBody with a BinaryBag, and content.filename is optional
-untrusted metadata, never a path or provider key. Duplicate/unknown fields and
-non-binary content fail admission. Do not extract the binary part through a
-flattened Record: dotted filename metadata changes that Record's structure.
+properties: content is MimeBody with a BinaryBag. Http4s also supplies optional
+content.filename metadata in the original form. Because the generated upload
+schema declares only deliveryRef/resourceId/content, public protocol ingress
+classifies content.filename as a named Argument. The owning TKL boundary admits
+that exact optional Argument only for HTTP POST when it uniquely matches the
+original form field. Required business fields remain properties. Every admitted
+business value must correlate with the original wire form; duplicate metadata
+across properties and arguments, missing or mismatched metadata, unknown or
+positional arguments, switches, duplicate/unknown wire fields, POST query fields,
+and non-binary content fail admission. Header-derived authorization cannot hide
+an authorization field supplied in the body or query.
 
-The focused generated-input specification verifies exact bytes/MIME through this
-owning decoder, and structured JSON/null through prepare. This is native input
-admission, not a live HTTP parser, persistence, provider upload or registration
-proof. No CNCF or ValueReader extension was needed. Do not encode media into
-JSON or parse binary through text.
+Non-HTTP callers retain the existing property-only contract with no arguments or
+switches. A filename property remains compatible; an HTTP filename property must
+also uniquely match its wire field. In either representation, filename is
+optional untrusted metadata: a nonempty String of at most 2048 UTF16 units without
+C0/C1 control characters. Its spelling is retained, never interpreted as a path
+or provider key. Do not extract the binary part through a flattened Record:
+dotted filename metadata changes that Record's structure.
+
+MaterialDeliveryHttpInputSpec reproduces the native parameter classification
+through public Ingress.recordToParameters with UploadOriginalOperation, then
+retains the original HTTP source through Request.ofHttpRequest. It specifies
+exact binary bytes/MIME and strict wire correlation. MaterialDeliveryInputSpec
+specifies non-HTTP compatibility and malformed input rejection. These input
+specifications do not themselves prove a live HTTP parser, persistence, provider
+upload or registration. No CNCF or ValueReader extension is required. Do not
+encode media into JSON or parse binary through text.
 
 ## Logical values
 

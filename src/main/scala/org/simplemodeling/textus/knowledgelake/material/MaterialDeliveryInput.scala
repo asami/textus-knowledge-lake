@@ -23,20 +23,26 @@ private[knowledgelake] object MaterialDeliveryInput {
           case HttpRequest.POST if http.query.isEmpty => Some(http.form)
           case _ => None
         }
+        // Only native POST filename metadata may arrive outside declared properties.
+        val metadata = request.arguments.filter(argument =>
+          http.method == HttpRequest.POST && optional("content.filename") && argument.name == "content.filename")
+        val projected = request.properties.filter(property => allowed(property.name)) ++
+          metadata.map(argument => Property(argument.name, argument.value, argument.spec))
         raw.filter { record =>
           val names = record.fields.map(_.key)
-          names.distinct.size == names.size && required.subsetOf(names.toSet) && names.forall(allowed) &&
+          metadata.size == request.arguments.size && projected.map(_.name).toSet == names.toSet &&
+            names.distinct.size == names.size && required.subsetOf(names.toSet) && names.forall(allowed) &&
             record.fields.forall { field => field.value match {
-              case Field.Value.Single(value) => request.properties.count(_.name == field.key) == 1 &&
-                request.properties.find(_.name == field.key).exists(_.value == value)
+              case Field.Value.Single(value) => projected.count(_.name == field.key) == 1 &&
+                projected.find(_.name == field.key).exists(_.value == value)
               case _ => false
             } }
-        }.map(_ => request.properties.filter(property => allowed(property.name)))
-      case _ => Some(request.properties)
+        }.map(_ => projected)
+      case _ => Option.when(request.arguments.isEmpty)(request.properties)
     }
     selected.filter { properties =>
       val names = properties.map(_.name)
-      request.arguments.isEmpty && request.switches.isEmpty && names.distinct.size == names.size &&
+      request.switches.isEmpty && names.distinct.size == names.size &&
         required.subsetOf(names.toSet) && names.forall(allowed)
     }.fold[Consequence[List[Property]]](Consequence.argumentInvalid(_invalid))(Consequence.success)
   }

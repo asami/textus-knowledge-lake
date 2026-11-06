@@ -28,8 +28,7 @@ private[knowledgelake] object MaterialDeliveryOriginalInput {
     MaterialDeliveryInput.propertiesC(request, _required, Set("content.filename")).flatMap { properties =>
     val names = properties.map(_.name)
     val admitted = for {
-      _ <- Option.when(request.arguments.isEmpty && request.switches.isEmpty &&
-        names.distinct.size == names.size && _required.subsetOf(names.toSet) && names.forall(_allowed)) (())
+      _ <- Option.when(names.distinct.size == names.size && _required.subsetOf(names.toSet) && names.forall(_allowed)) (())
       fields = properties.map(value => value.name -> value.value).toMap
       reference <- fields.get("deliveryRef").collect { case value: String if _reference(value) => value }
       resource <- fields.get("resourceId").collect {
