@@ -31,7 +31,8 @@ import org.simplemodeling.textus.knowledgelake.impl.{KnowledgeLakeParticipantFac
  * Test-owned synthetic provider, private grant files and public native lifecycle only.
  *
  * @since   Oct. 21, 2026
- * @version Oct. 25, 2026
+ *  version Oct. 25, 2026
+ * @version Nov.  6, 2026
  */
 private[knowledgelake] object MaterialReferenceFixture {
   val owner = "fixture-material-owner"
@@ -43,7 +44,7 @@ private[knowledgelake] object MaterialReferenceFixture {
   val token = "synthetic-access-token-private-marker"
   val bytes = Vector[Byte](0, 1, -1, 42)
   val privateMarkers = Vector(owner, connectionId, resourceKey, parentKey, token, "private-client-marker", "private-secret-marker")
-  val metadataUrl = s"https://www.googleapis.com/drive/v3/files/$resourceKey?supportsAllDrives=true&fields=id,name,mimeType,size,parents,trashed,version"
+  val metadataUrl = s"https://www.googleapis.com/drive/v3/files/$resourceKey?supportsAllDrives=true&fields=id,name,mimeType,size,parents,trashed,version,sha256Checksum,driveId"
   val mediaUrl = s"https://www.googleapis.com/drive/v3/files/$resourceKey?alt=media&supportsAllDrives=true"
 
   def replace(document: Json, key: String, value: Json): Json = Json.fromJsonObject(document.asObject.get.add(key, value))
@@ -121,17 +122,24 @@ private[knowledgelake] object MaterialReferenceFixture {
   }
 
   final class Session(val component: KnowledgeLakePrimaryComponent, val subsystem: Subsystem, val root: Path) {
+    def withParticipantIngress[A](providerName: String = MaterialParticipantFixture.identity.providerName,
+      tokenKind: Option[String] = Some("access"), subjectKind: org.goldenport.cncf.context.SubjectKind = org.goldenport.cncf.context.SubjectKind.User)(
+      body: MaterialParticipantIngress => A): A =
+      MaterialParticipantFixture.withIngress(subsystem, providerName, tokenKind, subjectKind)(body)
+
     private var _last_uow: Option[CountedUow] = None
     def acquisitions: Int = _last_uow.fold(0)(_.acquisitions)
     def request(operation: String, fields: Vector[(String, Any)] = Vector.empty): Request =
       Request.of(component = component.name, service = "Material", operation = operation,
         properties = fields.map { case (name, value) => Property(name, value, None) }.toList)
     def execute(operation: String, fields: Vector[(String, Any)] = Vector.empty,
-        sessionId: Option[String] = Some("material-owner-session"), driver: Driver = new Driver(Vector.empty)): Consequence[OperationResponse] = {
+        sessionId: Option[String] = Some("material-owner-session"), driver: Driver = new Driver(Vector.empty),
+        security: Option[org.goldenport.cncf.context.SecurityContext] = None): Consequence[OperationResponse] = {
       val base = ExecutionContext.create().withScope(component.scopeContext)
-      IngressSecurityResolver.resolve(base, sessionId.map(value => Map("x-textus-session" -> value)).getOrElse(Map.empty[String, String]))
-        .flatMap { admitted =>
-          val selected = admitted.executionContext
+      val selectedcontext = security.fold(IngressSecurityResolver.resolve(base,
+        sessionId.map(value => Map("x-textus-session" -> value)).getOrElse(Map.empty[String, String])).map(_.executionContext))(
+        value => Consequence.success(ExecutionContext.withSecurityContext(base, value)))
+      selectedcontext.flatMap { selected =>
           val uow = new CountedUow(selected, driver)
           _last_uow = Some(uow)
           val interpreter = new UnitOfWorkInterpreter(uow)
@@ -155,11 +163,13 @@ private[knowledgelake] object MaterialReferenceFixture {
   }
 
   def withSession[A](catalogText: Option[String] = Some(catalog().noSpaces), connection: String = "connected",
-      grant: String = "admitted", referenceMode: String = "bootstrap", packageCatalogText: Option[String] = None)(body: Session => A): A = {
+      grant: String = "admitted", referenceMode: String = "bootstrap", packageCatalogText: Option[String] = None,
+      participantConfiguration: Option[String] = None)(body: Session => A): A = {
     val previousruntime = GlobalRuntimeContext.current
     val previousglobal = Try(GlobalContext.globalContext).toOption
     val previouslog = LogBackendHolder.backend
-    val root = Files.createTempDirectory("tkl-material-reference-", PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"))).toRealPath()
+    val work = Files.createDirectories(Path.of("target/cncf/work/tkl-material-reference").toAbsolutePath.normalize)
+    val root = Files.createTempDirectory(work, "episode-", PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"))).toRealPath()
     try {
       val httpplan = Json.obj("schema" -> Json.fromString("cncf.runtime-http-execution.v1"),
         "baseUrl" -> Json.fromString("https://www.googleapis.com/"),
@@ -193,6 +203,7 @@ private[knowledgelake] object MaterialReferenceFixture {
         val settings = catalogText.map(MaterialReferenceRuntime.catalogKey.name -> _).toMap ++
           Option.when(referenceMode != "bootstrap")(MaterialReferenceRuntime.modeKey.name -> referenceMode).toMap ++
           packageCatalogText.map(MaterialReferenceRuntime.packagesKey.name -> _).toMap ++
+          participantConfiguration.map(MaterialParticipantConfiguration.configurationKey.name -> _).toMap ++
           (if (connection == "absent") Map.empty[String, String]
           else if (connection == "service-account") MaterialServiceAccountSpec.connectionSettings(root)
           else {

@@ -23,6 +23,17 @@ read-only Operations operate independently of OpenClaw processing and never
 initiate preparation. Registration commands require explicit registered mode
 and owning-host admission; their declaration does not establish runtime availability.
 
+> MATERIAL PACKAGE V1 NOTE FOR CODEX
+>
+> Material is now distinguished from PreparedMaterial.
+> - Material: self-describing Knowledge Lake package, physically journaled, containing source/working assets and provenance.
+> - PreparedMaterial: preparation result Entity used for candidate extraction, with the existing stronger lifecycle/version semantics.
+> - KAR: PreparedMaterial transport/export artifact, not the Material package storage format.
+>
+> Design source: docs/notes/material-package-v1.md
+>
+> When native CML modeling is implemented, inspect current Cozy/CML grammar first and model Material / MaterialAsset / Provenance / lineage only with supported constructs. Do not invent syntax.
+
 # SERVICE
 
 ## Material
@@ -364,6 +375,356 @@ CommandAction
 
 MaterialRegistrationResult
 
+## MaterialDelivery
+
+### SUMMARY
+
+TKL-owned mobile delivery discovery, preparation, original ingress and registration.
+
+### DESCRIPTION
+
+Additive mobile delivery contract defined by mobile-material-delivery-v1.md.
+All Operations use the actual CNCF caller and ordinary native authorization.
+The handwritten runtime enables this service with durable native checkpoints.
+Controlled specifications do not establish live Google access or Android acceptance.
+
+### OPERATION
+
+#### getDestination
+
+##### TYPE
+
+QUERY
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Read the permitted logical destination without provisioning or provider IO.
+
+##### DESCRIPTION
+
+Return configurationRequired when the explicit server delivery configuration is absent. Production clients discover integration information here; test hosts may supply explicit configuration. Return no credential, physical folder or provider key. This declaration does not establish an implemented runtime.
+
+##### INPUT
+
+###### TYPE
+
+void
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialDeliveryDestination
+
+#### prepare
+
+##### TYPE
+
+COMMAND
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Prepare one durable delivery for an immutable committed contribution.
+
+##### DESCRIPTION
+
+Preserve the structured contribution JSON including nulls and resource associations. Scope request correlation to the authenticated caller and application. Use ordinary native claim/load before remote effects; the same request must reconcile the same retained destination and delivery. A different contribution is a conflict. This declaration does not establish implemented persistence.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialDeliveryPrepareCommand
+
+######## EXTENDS
+
+CommandAction
+
+######## ATTRIBUTE
+
+| name | type | multiplicity |
+|------|------|--------------|
+| requestId | string | 1 |
+| contribution | json | 1 |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialDeliverySnapshot
+
+#### findForRequest
+
+##### TYPE
+
+QUERY
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Find the caller-authorized delivery for the exact committed request.
+
+##### DESCRIPTION
+
+Return confirmed authorized absence distinctly from datastore or authentication failure. Do not disclose another caller delivery or initiate preparation, upload or registration.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialDeliveryRequestQuery
+
+######## EXTENDS
+
+QueryAction
+
+######## ATTRIBUTE
+
+| name | type | multiplicity |
+|------|------|--------------|
+| requestId | string | 1 |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialDeliveryLookup
+
+#### get
+
+##### TYPE
+
+QUERY
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Read actual retained delivery progress without provider mutation.
+
+##### DESCRIPTION
+
+Accept the opaque delivery reference unchanged. Require native read authorization. Return a Material reference only after confirmed registration; a planned URN or uploaded bytes are not registration.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialDeliverySelectionQuery
+
+######## EXTENDS
+
+QueryAction
+
+######## ATTRIBUTE
+
+| name | type | multiplicity |
+|------|------|--------------|
+| deliveryRef | string | 1 |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialDeliverySnapshot
+
+#### uploadOriginal
+
+##### TYPE
+
+COMMAND
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Receive one declared binary original for the caller-authorized delivery.
+
+##### DESCRIPTION
+
+Use native binary input, not JSON text or base64. Authorize the retained delivery and declared resource before provider access. Validate media and length against its declaration. Retain confirmed progress; uncertain provider outcomes require reconciliation rather than an automatic new create. The generated blob decoder still needs ingress verification.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialDeliveryUploadCommand
+
+######## EXTENDS
+
+CommandAction
+
+######## ATTRIBUTE
+
+| name | type | multiplicity |
+|------|------|--------------|
+| deliveryRef | string | 1 |
+| resourceId | string | 1 |
+| content | blob | 1 |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialDeliverySnapshot
+
+#### finalize
+
+##### TYPE
+
+COMMAND
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Register stored originals and metadata and return the actual Material reference.
+
+##### DESCRIPTION
+
+Require complete original and document associations. Preserve native registration identity and actual status across reply loss. Queries reconcile uncertain outcomes; do not replay the old one-shot materializer or issue another registration. Studio acknowledgement remains separate.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialDeliveryFinalizeCommand
+
+######## EXTENDS
+
+CommandAction
+
+######## ATTRIBUTE
+
+| name | type | multiplicity |
+|------|------|--------------|
+| deliveryRef | string | 1 |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialDeliverySnapshot
+
+#### prepareOriginalTransfer
+
+##### TYPE
+
+COMMAND
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Prepare or inspect the retained direct-upload session without sending original bytes.
+
+##### DESCRIPTION
+
+Authorize the retained delivery owner. Preserve destination, route and per-original
+provider session across restart. Unknown outcomes never select another route.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialDeliveryDirectPrepareCommand
+
+######## EXTENDS
+
+CommandAction
+
+######## ATTRIBUTE
+
+| name | type | multiplicity |
+|------|------|--------------|
+| deliveryRef | string | 1 |
+| resourceId | string | 1 |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialDeliveryTransfer
+
+#### confirmOriginalTransfer
+
+##### TYPE
+
+COMMAND
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Independently confirm the notified direct-upload result before accepting the original.
+
+##### DESCRIPTION
+
+Authorize the retained delivery owner. Preserve destination, route and per-original
+provider session across restart. Unknown outcomes never select another route.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialDeliveryDirectConfirmCommand
+
+######## EXTENDS
+
+CommandAction
+
+######## ATTRIBUTE
+
+| name | type | multiplicity |
+|------|------|--------------|
+| deliveryRef | string | 1 |
+| resourceId | string | 1 |
+| transferRef | string | 1 |
+| result | json | 1 |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialDeliverySnapshot
+
 # VALUE
 
 ## MaterialSearchResult
@@ -442,15 +803,81 @@ MaterialRegistrationResult
 | state          | string | 1            |
 | materialRef    | string | 1            |
 
-### DESCRIPTION
+## MaterialDeliveryDestination
 
-> MATERIAL PACKAGE V1 NOTE FOR CODEX
->
-> Material is now distinguished from PreparedMaterial.
-> - Material: self-describing Knowledge Lake package, physically journaled, containing source/working assets and provenance.
-> - PreparedMaterial: preparation result Entity used for candidate extraction, with the existing stronger lifecycle/version semantics.
-> - KAR: PreparedMaterial transport/export artifact, not the Material package storage format.
->
-> Design source: docs/notes/material-package-v1.md
->
-> When native CML modeling is implemented, inspect current Cozy/CML grammar first and model Material / MaterialAsset / Provenance / lineage only with supported constructs. Do not invent syntax.
+### Attribute
+
+| name | type | multiplicity |
+|------|------|--------------|
+| destinationId | string | ? |
+| label | string | ? |
+| availability | string | 1 |
+| transferMethod | string | ? |
+| transferReason | string | ? |
+| maxResourceBytes | long | ? |
+| contentIntegrity | string | ? |
+
+## MaterialDeliverySnapshot
+
+### Attribute
+
+| name | type | multiplicity |
+|------|------|--------------|
+| deliveryRef | string | 1 |
+| requestId | string | 1 |
+| revision | long | 1 |
+| destinationId | string | 1 |
+| destinationLabel | string | 1 |
+| transferMethod | string | 1 |
+| transferReason | string | ? |
+| state | string | 1 |
+| resources | MaterialDeliveryResourceProgress | * |
+| materialRef | string | ? |
+| actionRequired | string | ? |
+
+## MaterialDeliveryResourceProgress
+
+### Attribute
+
+| name | type | multiplicity |
+|------|------|--------------|
+| resourceId | string | 1 |
+| mediaType | string | 1 |
+| byteLength | long | 1 |
+| state | string | 1 |
+| contentDigest | json | ? |
+| verificationState | string | ? |
+| verificationAttempts | int | ? |
+| verificationReason | string | ? |
+
+## MaterialDeliveryLookup
+
+### Attribute
+
+| name | type | multiplicity |
+|------|------|--------------|
+| found | boolean | 1 |
+| delivery | MaterialDeliverySnapshot | ? |
+
+## MaterialDeliveryTransfer
+
+### Attribute
+
+| name | type | multiplicity |
+|------|------|--------------|
+| delivery | MaterialDeliverySnapshot | 1 |
+| instruction | MaterialOriginalTransferInstruction | ? |
+
+## MaterialOriginalTransferInstruction
+
+### Attribute
+
+| name | type | multiplicity |
+|------|------|--------------|
+| transferRef | string | 1 |
+| resourceId | string | 1 |
+| method | string | 1 |
+| uploadSessionUri | string | 1 |
+| mediaType | string | 1 |
+| byteLength | long | 1 |
+| nextOffset | long | 1 |

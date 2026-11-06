@@ -1,6 +1,14 @@
 # TKL-managed mobile Material delivery
 
-Decision: 2026-10-24. Status: agreed specification; implementation pending.
+Decision: 2026-10-24; clarified 2026-10-25. Status: implementation in progress;
+live acceptance pending.
+
+The selected [mobile delivery v1 contract](mobile-material-delivery-v1.md)
+binds additive Operation names, client values and native implementation
+requirements for ESA63-01. Its CML contracts now generate/compile and native input admission passes focused
+specifications. The native delivery runtime now supplies durable mediated
+transfer/registration and direct-provider preparation/confirmation. Deployed
+ingress and live provider acceptance remain pending.
 
 ## Authority and supported destinations
 
@@ -43,7 +51,9 @@ These are semantic capabilities, not final operation names or wire DTOs.
 2. Prepare delivery for a committed Material, its metadata and declared resources.
    TKL returns a delivery reference and the required transfer instructions.
 3. Core transfers resources through TKL or directly to the provider using those
-   instructions. Direct Drive upload is a physical optimization, not permission
+   instructions. Prefer direct transfer when the selected provider exposes its
+   optional preparation/status capability; otherwise explicitly select transfer
+   through TKL and retain the capability reason. Direct Drive upload is not permission
    for the client to construct Lake locations.
 4. Report transfer results and finalize registration through TKL. TKL returns
    the Material reference/URN and the actual registration outcome.
@@ -54,6 +64,26 @@ Uploading photo/audio bytes alone is not registration of a complete Material.
 The contract must include committed metadata, resource associations and provenance.
 TKL registration and any subsequent Editing Studio server acknowledgement remain
 separate facts. Neither implies Candidate formation or Information admission.
+
+Permission refusal, network failure and unknown effects are failures/recovery
+states, not evidence that the provider lacks direct capability. They never
+silently change the retained transfer method. The authorized client receives
+only narrow per-original transfer instructions; TKL independently checks actual
+provider completion before accepting that original.
+
+## Test configuration and production discovery
+
+The user explicitly permits configuration for testing (2026-10-24). The test
+host may select the native service connection, provider configuration and
+dedicated destination; client test composition may inject configured contract
+responses. Keep fixtures distinguishable from real native/provider results.
+Configuration alone proves neither Google access nor Material registration.
+
+In production, TKL supplies the permitted integration information through its
+public discovery/preparation contract. Client bootstrap may identify the service
+and application authentication context, but it is not a second source of
+storage policy. TKL failure must not activate a test destination. Server-side
+Google credentials and physical mappings remain on the server.
 
 ## Configuration, authorization and recovery
 
@@ -95,17 +125,6 @@ destination. Permissions revoked or a folder removed produce actionable failure.
 
 Plan: [mobile delivery workstream](../phase/tkl-managed-mobile-material-delivery-plan.md).
 Parent contract: [Material access and processing](material-access-and-processing.md).
-
-
-## Planned content-integrity extension
-
-The [direct-upload integrity plan](https://github.com/KnowledgeHubProject/nict-editing-studio-app/blob/main/docs/notes/direct-upload-integrity-plan.md) adds
-server-service-account Shared Drive new-file reservations and SHA-256
-verification before registration to the existing route. This is an explicitly
-authorized content-integrity use, not a management-hash ledger. Existing
-metadata/length-only confirmation does not establish this new acceptance.
-Status remains planned for this delta; preserve prior evidence and active work.
-
 ## Untrusted-client admission and access — 2026-11-02
 
 The [UC-01..04 acceptance profile](https://github.com/asami/goldenport-cncf/blob/main/docs/spec/untrusted-client-material-acceptance.md)
@@ -154,3 +173,17 @@ External key custody/offline media require explicit provider/equipment support;
 they are not properties of the current online Drive route or standard-use gates.
 Standard deployment documentation identifies operator sharing/backup/restore
 duties and actual qualification rather than implying configuration is evidence.
+
+## Runtime profile isolation — 2026-11-02
+
+Apply [shared mode defaults](https://github.com/asami/goldenport-cncf/blob/main/docs/spec/runtime-mode-security-defaults.md) through trusted common configuration.
+Dev/test use isolated synthetic owners, storage and provider adapters.
+Participant demo uses private demo storage and real owner authorization;
+production uses its qualified real bindings. Clients never choose provider
+credentials or weaken registration checks by sending a mode value.
+
+The same reservation, authoritative verification and Material-admission contract
+applies in every mode. Fixture provider results are test evidence only.
+Destination/account changes preserve reservation ownership and do not replay
+pending transfers elsewhere. Synthetic reset cannot delete participant originals;
+post-event handling follows the declared Material retention/sharing policy.

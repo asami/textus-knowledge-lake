@@ -10,7 +10,8 @@ import org.scalatest.wordspec.AnyWordSpec
 
 /*
  * @since   Oct. 21, 2026
- * @version Oct. 28, 2026
+ *  version Oct. 28, 2026
+ * @version Nov.  6, 2026
  */
 final class MaterialReferenceOperationSpec extends AnyWordSpec with Matchers with GivenWhenThen {
   import MaterialReferenceFixture.*
@@ -137,7 +138,9 @@ final class MaterialReferenceOperationSpec extends AnyWordSpec with Matchers wit
           Then("every operation is a generated native query bound to the real participant factory")
           actions.foreach(_.TAKE shouldBe a[QueryAction])
           session.component.operationDefinitions.map(_.name).toSet shouldBe Set("searchMaterials", "getMaterial", "readOriginal",
-            "createMaterialRegistration", "getMaterialRegistration", "materializeMaterial")
+            "createMaterialRegistration", "getMaterialRegistration", "materializeMaterial",
+            "getDestination", "prepare", "findForRequest", "get", "uploadOriginal", "finalize",
+            "prepareOriginalTransfer", "confirmOriginalTransfer")
           session.component.factoryOption should not be empty
           session.component.materialCatalog should not be empty
         }

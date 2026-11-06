@@ -2,12 +2,14 @@ package org.simplemodeling.textus.knowledgelake.material
 
 import io.circe.Json
 import org.goldenport.Consequence
+import org.goldenport.cncf.filestore.FileStoreContentDigest
 
 /*
  * Admitted provider-neutral contribution values; opaque source data grants no access.
  *
  * @since   Oct. 21, 2026
- * @version Oct. 21, 2026
+ *  version Oct. 25, 2026
+ * @version Nov.  6, 2026
  */
 final class MaterialContribution private (
   val title: String,
@@ -56,6 +58,7 @@ final class MaterialOriginalContribution private (
   val mediaType: String,
   val byteLength: Long,
   val sourceReference: Json,
+  val contentDigest: Option[FileStoreContentDigest],
   private val _json: Json
 ) {
   override def toString: String = "MaterialOriginalContribution(<admitted>)"
@@ -70,14 +73,17 @@ object MaterialOriginalContribution {
   private val _keys = Set("resourceId", "role", "mediaType", "byteLength", "sourceReference")
   private[material] def _parse(json: Json): Option[MaterialOriginalContribution] = {
     for {
-      fields <- json.asObject.filter(_.keys.toSet == _keys)
+      fields <- json.asObject.filter(value => _keys.subsetOf(value.keys.toSet) &&
+        (value.keys.toSet -- _keys).subsetOf(Set("contentDigest")))
       id <- fields("resourceId").flatMap(_.asString).filter(MaterialContribution._resource_id)
       role <- fields("role").flatMap(_.asString).filter(MaterialContribution._nonblank)
       media <- fields("mediaType").flatMap(_.asString)
         .filter(_.matches("[A-Za-z0-9!#$%&'*+.^_`|~-]+/[A-Za-z0-9!#$%&'*+.^_`|~-]+"))
       length <- fields("byteLength").flatMap(_.asNumber).flatMap(_.toLong).filter(_ >= 0L)
       source <- fields("sourceReference").filter(_.isObject)
-    } yield new MaterialOriginalContribution(id, role, media, length, source, json)
+      digest <- fields("contentDigest").fold[Option[Option[FileStoreContentDigest]]](Some(None))(value =>
+        MaterialDeliveryIntegrity.parseDigest(value).map(Some(_)))
+    } yield new MaterialOriginalContribution(id, role, media, length, source, digest, json)
   }
 }
 

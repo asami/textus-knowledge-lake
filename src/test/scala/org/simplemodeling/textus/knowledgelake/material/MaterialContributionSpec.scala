@@ -13,7 +13,8 @@ import org.scalatest.wordspec.AnyWordSpec
  * Neutral contribution admission and TKL-owned pure package semantics.
  *
  * @since   Oct. 21, 2026
- * @version Oct. 21, 2026
+ *  version Oct. 25, 2026
+ * @version Nov.  6, 2026
  */
 final class MaterialContributionSpec extends AnyWordSpec with Matchers with GivenWhenThen {
   import MaterialContributionSpec.*
@@ -60,6 +61,44 @@ final class MaterialContributionSpec extends AnyWordSpec with Matchers with Give
         val admitted = raws.map(raw => take(MaterialContribution.parseC(raw)))
         Then("the known byte lengths retain their exact values")
         admitted.map(_.originals.head.byteLength) shouldBe Vector(0L, Long.MaxValue)
+      }
+    }
+
+    "admit optional checked original digests" which {
+      "normalize at least thirty generated SHA-256 values without rewriting opaque JSON or uppercase source spelling" in {
+        Given("complete contributions with opaque nulls and generated mixed-case SHA-256 declarations")
+        val hexes = Gen.listOfN(64, Gen.oneOf("0123456789abcdefABCDEF".toVector)).map(_.mkString)
+        When("the native contribution parser admits each expected content digest")
+        val checked = Test.check(Test.Parameters.default.withMinSuccessfulTests(40), Prop.forAll(hexes) { hex =>
+          val raw = contributionJson().mapObject(fields => fields.add("originals", Json.fromValues(
+            fields("originals").get.asArray.get.map(original => original.mapObject(_.add("contentDigest",
+              Json.obj("algorithm" -> Json.fromString("sha256"), "value" -> Json.fromString(hex))))))))
+          val admitted = take(MaterialContribution.parseC(raw))
+          admitted.json == raw && admitted.originals.forall(_.contentDigest.exists(_.value == hex.toLowerCase(java.util.Locale.ROOT))) &&
+            parser.parse(raw.noSpaces).toOption.contains(raw)
+        })
+        Then("all checked values normalize while original JSON trees including nulls roundtrip unchanged")
+        checked.passed shouldBe true
+        checked.succeeded should be >= 40
+        checked.discarded shouldBe 0
+      }
+
+      "preserve absent digests as legacy and reject present malformed or open digest objects" in {
+        Given("a legacy original and explicit null, wrong algorithms, inner extras and malformed 64-hex digests")
+        val raw = contributionJson()
+        val good = Json.obj("algorithm" -> Json.fromString("sha256"), "value" -> Json.fromString("A" * 64))
+        val bad = Vector(Json.Null, Json.fromString("a" * 64), Json.arr(),
+          replace(good, "algorithm", Json.fromString("SHA256")), replace(good, "algorithm", Json.fromString("sha512")),
+          good.mapObject(_.remove("value")), good.mapObject(_.add("extra", Json.Null)),
+          replace(good, "value", Json.Null), replace(good, "value", Json.fromInt(64))) ++
+          Vector("", "a" * 63, "a" * 65, "g" * 64, " " + "a" * 64, "a" * 64 + "\n").map(value => replace(good, "value", Json.fromString(value)))
+        When("each complete contribution is admitted with one changed original declaration")
+        val legacy = take(MaterialContribution.parseC(raw))
+        val results = bad.map(digest => MaterialContribution.parseC(raw.mapObject(fields => fields.add("originals",
+          Json.fromValues(fields("originals").get.asArray.get.map(_.mapObject(_.add("contentDigest", digest))))))))
+        Then("absence alone retains None and malformed presence always returns the fixed safe argument failure")
+        legacy.originals.forall(_.contentDigest.isEmpty) shouldBe true
+        results.foreach(result => failure(result).displayMessage shouldBe "Invalid Material contribution")
       }
     }
 

@@ -41,7 +41,8 @@ import org.testcontainers.utility.DockerImageName
  * Test-owned artifacts and cleanup are confined to one target/cncf/work episode.
  *
  * @since   Oct. 21, 2026
- * @version Oct. 22, 2026
+ *  version Oct. 25, 2026
+ * @version Nov.  6, 2026
  */
 private[material] object MaterialRegistrationPersistenceFixture {
   val principal: String = "registration_owner"
@@ -277,6 +278,11 @@ private[material] object MaterialRegistrationPersistenceFixture {
   }
   final class Session(val component: KnowledgeLakePrimaryComponent, val subsystem: Subsystem,
     val store: NativeStore, val database: Database, val root: Path) {
+    def withParticipantIngress[A](providerName: String = MaterialParticipantFixture.identity.providerName,
+      tokenKind: Option[String] = Some("access"), subjectKind: org.goldenport.cncf.context.SubjectKind = org.goldenport.cncf.context.SubjectKind.User)(
+      body: MaterialParticipantIngress => A): A =
+      MaterialParticipantFixture.withIngress(subsystem, providerName, tokenKind, subjectKind)(body)
+
     private var _aborts = 0
     private var _commits = 0
     def aborts: Int = _aborts
@@ -291,20 +297,25 @@ private[material] object MaterialRegistrationPersistenceFixture {
       })
     }
     def query(operation: String, fields: Vector[(String, Any)] = Vector.empty,
-      session: Option[String] = Some("owner-session"), driver: Option[HttpDriver] = None): Consequence[OperationResponse] =
-        _with_context(session, driver) { context =>
-      val request = Request.of(component = component.name, service = "Material", operation = operation,
+      session: Option[String] = Some("owner-session"), driver: Option[HttpDriver] = None,
+      service: String = "Material", observeTrace: Option[String => Unit] = None,
+      security: Option[SecurityContext] = None): Consequence[OperationResponse] =
+        _with_context(session, driver, observeTrace, security) { context =>
+      val request = Request.of(component = component.name, service = service, operation = operation,
         properties = fields.map { case (name, value) => Property(name, value, None) }.toList)
       component.logic.makeOperationRequest(request).flatMap {
         case action: Action => ActionEngine.create().execute(component.logic.createActionCall(action, context))
         case _ => Consequence.argumentInvalid("Expected a native Material query")
       }
     }
-    private def _with_context[A](session: Option[String], optionaldriver: Option[HttpDriver] = None)(
+    private def _with_context[A](session: Option[String], optionaldriver: Option[HttpDriver] = None,
+      observetrace: Option[String => Unit] = None, security: Option[SecurityContext] = None)(
       run: ExecutionContext => Consequence[A]): Consequence[A] = {
-      val base = ExecutionContext.create().withScope(component.scopeContext)
-      IngressSecurityResolver.resolve(base, session.map(value => Map("x-textus-session" -> value)).getOrElse(Map.empty[String, String])).flatMap { admitted =>
-        val selected = admitted.executionContext
+      val base = ExecutionContext.withFrameworkCallTreeEnabled(ExecutionContext.create(), observetrace.isDefined).withScope(component.scopeContext)
+      val selectedcontext = security.fold(IngressSecurityResolver.resolve(base,
+        session.map(value => Map("x-textus-session" -> value)).getOrElse(Map.empty[String, String])).map(_.executionContext))(
+        value => Consequence.success(ExecutionContext.withSecurityContext(base, value)))
+      selectedcontext.flatMap { selected =>
         lazy val uow: UnitOfWork = optionaldriver.fold[UnitOfWork](new UnitOfWork(context)) {
           case driver: MaterialReferenceFixture.Driver => new MaterialReferenceFixture.CountedUow(context, driver)
           case driver => new NativeHttpUow(context, driver)
@@ -319,7 +330,10 @@ private[material] object MaterialRegistrationPersistenceFixture {
         // Public native datastore binding. External-default without another configured
         // provider preserves this explicit, caller-owned SQL datastore on normal routing.
         context.dataStoreSpace.useDataStore(store)
-        run(context)
+        val result = run(context)
+        observetrace.foreach(observe => observe(context.observability.callTreeContext.build()
+          .map(tree => org.goldenport.record.io.RecordEncoder.json(tree.toRecord)).getOrElse("")))
+        result
       }
     }
     def create(contribution: MaterialContribution): Consequence[EntitySnapshot[MaterialRegistrationRecord]] = execute("create")(_.create(contribution))
@@ -346,7 +360,9 @@ private[material] object MaterialRegistrationPersistenceFixture {
   }
   /** A new bootstrap, component, store and interpreter can reopen the same real schema. */
   def withSession[A](database: Database, parameters: Map[String, String] = Map.empty,
-    prepare: Path => Map[String, String] = _ => Map.empty)(body: Session => A): A = synchronized {
+    prepare: Path => Map[String, String] = _ => Map.empty,
+    executionSeed: String = "tkl-native-registration")(body: Session => A): A = synchronized {
+    require(Option(executionSeed).exists(_.matches("[A-Za-z0-9_-]{1,64}")), "Fixture executionSeed must be a safe ASCII token of 1 to 64 characters")
     val previousruntime = GlobalRuntimeContext.current
     val previousglobal = Try(GlobalContext.globalContext).toOption
     val previouslog = LogBackendHolder.backend
@@ -360,7 +376,7 @@ private[material] object MaterialRegistrationPersistenceFixture {
       val additional = prepare(root)
       val settings = additional ++ parameters
       val descriptor = root.resolve("test.yaml")
-      Files.writeString(descriptor, """kind: test-descriptor
+      Files.writeString(descriptor, s"""kind: test-descriptor
         |execution:
         |  profile: controlled
         |  key: tkl-native-registration
@@ -369,7 +385,7 @@ private[material] object MaterialRegistrationPersistenceFixture {
         |    start-at: '2026-10-21T00:00:00Z'
         |  random:
         |    mode: seeded
-        |    seed: tkl-native-registration
+        |    seed: $executionSeed
         |  ids:
         |    mode: deterministic
         |  scheduler:

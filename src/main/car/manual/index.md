@@ -1,7 +1,7 @@
 # Knowledge Lake reference manual
 
 Component: `org.simplemodeling.textus.KnowledgeLake`\
-Version: `0.1.0-SNAPSHOT`
+Version: `0.1.1-SNAPSHOT`
 
 See the [user guide](user-guide.md),
 Material reference v1 (`docs/spec/material-reference-v1.md`) and
@@ -176,3 +176,13 @@ Reads start no registration, preparation or OpenClaw workflow and create no
 Candidate. A provider receipt is neither native registration nor human approval.
 Owning public registration authoring does not establish composed Studio activation,
 real Google/App evidence, packaged-runtime acceptance or whole Stage acceptance.
+
+## Opt-in participant access
+
+The server-owned `material.participant.configuration` profile pins the actual
+cohost authentication provider and requires an access-session Bearer route.
+Existing destination and native Material owner policies still apply. See
+`docs/spec/participant-material-access-v1.md` in the source checkout for the
+nonsecret operator template and public delivery methods. That source document
+is not a packaged manual link. No deployed URL, Google provisioning or consumer
+activation is implied by this manual.

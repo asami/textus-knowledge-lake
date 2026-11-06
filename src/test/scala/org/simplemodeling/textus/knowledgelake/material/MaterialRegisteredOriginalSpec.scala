@@ -26,7 +26,8 @@ import org.simplemodeling.textus.knowledgelake.KnowledgeLakeComponent
  * Synthetic custody and HTTP evidence do not establish real Google acceptance.
  *
  * @since   Oct. 22, 2026
- * @version Oct. 28, 2026
+ *  version Oct. 28, 2026
+ * @version Nov.  6, 2026
  */
 final class MaterialRegisteredOriginalSpec extends AnyWordSpec with Matchers with GivenWhenThen
     with ConclusionMatchers with MaterialRegistrationPostgresqlSpec {
@@ -596,7 +597,7 @@ private[material] object MaterialRegisteredOriginalSpec {
     "name" -> Json.fromString("private-physical-display"), "mimeType" -> Json.fromString("image/png"),
     "size" -> Json.fromString(png.size.toString), "parents" -> Json.arr(Json.fromString(parent)), "trashed" -> Json.False)
   private def _metadata_url(key: String): String =
-    s"https://www.googleapis.com/drive/v3/files/$key?supportsAllDrives=true&fields=id,name,mimeType,size,parents,trashed,version"
+    s"https://www.googleapis.com/drive/v3/files/$key?supportsAllDrives=true&fields=id,name,mimeType,size,parents,trashed,version,sha256Checksum,driveId"
   private def _media_url(key: String): String = s"https://www.googleapis.com/drive/v3/files/$key?alt=media&supportsAllDrives=true"
   private def _private_markers(seed: Seed): Vector[String] = Vector(token, "registered-private-client", "registered-private-secret",
     "private-physical-display", seed.file.reference.key, seed.file.parent.key)

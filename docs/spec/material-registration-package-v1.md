@@ -38,8 +38,8 @@ The external object contains exactly these seven keys:
 | `originals` | Ordered vector of original objects |
 | `documents` | Ordered vector of document objects |
 
-An original object contains exactly `resourceId`, `role`, `mediaType`,
-`byteLength`, `sourceReference`. IDs match
+An original object contains required `resourceId`, `role`, `mediaType`,
+`byteLength`, `sourceReference` and optional `contentDigest`; all other keys are invalid. IDs match
 `[A-Za-z0-9][A-Za-z0-9_-]{0,127}`. Role is a nonblank string. MIME has the existing
 type/subtype token grammar, with no parameters; accepted capitalization is
 retained. `byteLength` is a known nonnegative Long, including zero.
@@ -192,3 +192,26 @@ discards; storage samples include arbitrary UTF16 and nonempty binary payloads.
 
 These are authored specifications, not recorded passing results, production
 Google-account evidence, public registration acceptance or Phase closure.
+
+## Optional original integrity declaration (DU-02)
+
+The existing `textus.material-contribution/1` schema and seven-key envelope remain
+unchanged. An original may include exactly
+`contentDigest: {"algorithm":"sha256","value":"<64 hex>"}`. Absence admits legacy
+None; explicit null, unknown inner keys, non-sha256 algorithm and malformed hex
+reject with the same fixed safe argument failure. `MaterialOriginalContribution`
+exposes `Option[FileStoreContentDigest]`, constructed by CNCF's checked factory;
+its typed value normalizes uppercase hex while the raw original JSON is retained.
+Opaque JSON, arrays and nulls are never renamed, string-encoded or rewritten.
+
+The digest is an expected external binary-content value, not a package identity,
+deduplication key, admission hash or routing mechanism. Pure planning and the old
+one-shot package writer do not assert verification. The mobile delivery boundary
+in [mobile delivery v1](mobile-material-delivery-v1.md) owns immutable authenticated
+expectations, reservation/placement/proof checkpoints, independent metadata SHA
+comparison and the registration gate, including its shared three-check bound.
+No body download or hash of management data is introduced by that server gate.
+
+MaterialContributionSpec authors absent/uppercase/valid/generated/malformed digest
+admission and opaque JSON/null roundtrip. New server authoring awaits parent
+validation and independent review; it makes no new SHA-verified live claim.

@@ -22,7 +22,8 @@ import org.simplemodeling.textus.knowledgelake.impl.KnowledgeLakePrimaryFactory
 /** Logical package access through the owning native factory, ingress, ActionCall and UOW.
   * Controlled responses contain no real cloud credentials or SQL mutations.
   * @since Oct. 25, 2026
-  * @version Oct. 28, 2026
+  *  version Oct. 28, 2026
+  * @version Nov.  6, 2026
   */
 final class MaterialPackageReferenceSpec extends AnyWordSpec with Matchers with GivenWhenThen {
   import MaterialPackageReadSpec.*
@@ -98,7 +99,9 @@ final class MaterialPackageReferenceSpec extends AnyWordSpec with Matchers with 
           Then("the same public operations use the owning native query factory without bootstrap inference")
           actions.foreach(_.TAKE shouldBe a[QueryAction])
           session.component.operationDefinitions.map(_.name).toSet shouldBe Set("searchMaterials", "getMaterial", "readOriginal",
-            "createMaterialRegistration", "getMaterialRegistration", "materializeMaterial")
+            "createMaterialRegistration", "getMaterialRegistration", "materializeMaterial",
+            "getDestination", "prepare", "findForRequest", "get", "uploadOriginal", "finalize",
+            "prepareOriginalTransfer", "confirmOriginalTransfer")
           session.component._material_reference_mode shouldBe MaterialReferenceRuntime.Mode.Packages
           session.component.materialCatalog shouldBe None
           session.component._material_package_catalog should not be empty
@@ -557,13 +560,13 @@ final class MaterialPackageReferenceSpec extends AnyWordSpec with Matchers with 
   }
 
   private def _stat_path(reference: FileStoreRef): String =
-    s"https://www.googleapis.com/drive/v3/files/${reference.key}?supportsAllDrives=true&fields=id,name,mimeType,size,parents,trashed,version"
+    s"https://www.googleapis.com/drive/v3/files/${reference.key}?supportsAllDrives=true&fields=id,name,mimeType,size,parents,trashed,version,sha256Checksum,driveId"
   private def _media_path(reference: FileStoreRef): String =
     s"https://www.googleapis.com/drive/v3/files/${reference.key}?alt=media&supportsAllDrives=true"
   private def _listing_path(parent: FileStoreRef): String = {
     val parameters = Vector("q" -> s"'${parent.key}' in parents and trashed = false", "supportsAllDrives" -> "true",
       "includeItemsFromAllDrives" -> "true", "pageSize" -> "50",
-      "fields" -> "nextPageToken,incompleteSearch,files(id,name,mimeType,size,parents,trashed,version)")
+      "fields" -> "nextPageToken,incompleteSearch,files(id,name,mimeType,size,parents,trashed,version,sha256Checksum,driveId)")
     "https://www.googleapis.com/drive/v3/files?" + parameters.map { case (key, value) =>
       key + "=" + URLEncoder.encode(value, StandardCharsets.UTF_8)
     }.mkString("&")
