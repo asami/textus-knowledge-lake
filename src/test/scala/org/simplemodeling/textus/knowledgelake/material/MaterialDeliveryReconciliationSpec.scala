@@ -6,6 +6,10 @@ import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+/*
+ * @since Nov.  9, 2026
+ * @version Nov.  9, 2026
+ */
 final class MaterialDeliveryReconciliationSpec extends AnyWordSpec with Matchers with GivenWhenThen {
   "A retained collection reservation" should {
     "round trip its exact binding and observation over many opaque identities" in {

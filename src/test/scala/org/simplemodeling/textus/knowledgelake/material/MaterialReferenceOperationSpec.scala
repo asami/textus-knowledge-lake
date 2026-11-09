@@ -11,7 +11,7 @@ import org.scalatest.wordspec.AnyWordSpec
 /*
  * @since   Oct. 21, 2026
  *  version Oct. 28, 2026
- * @version Nov.  6, 2026
+ * @version Nov.  9, 2026
  */
 final class MaterialReferenceOperationSpec extends AnyWordSpec with Matchers with GivenWhenThen {
   import MaterialReferenceFixture.*
@@ -140,7 +140,7 @@ final class MaterialReferenceOperationSpec extends AnyWordSpec with Matchers wit
           session.component.operationDefinitions.map(_.name).toSet shouldBe Set("searchMaterials", "getMaterial", "readOriginal",
             "createMaterialRegistration", "getMaterialRegistration", "materializeMaterial",
             "getDestination", "prepare", "findForRequest", "get", "uploadOriginal", "finalize",
-            "prepareOriginalTransfer", "confirmOriginalTransfer")
+            "prepareOriginalTransfer", "confirmOriginalTransfer", "reconcile")
           session.component.factoryOption should not be empty
           session.component.materialCatalog should not be empty
         }

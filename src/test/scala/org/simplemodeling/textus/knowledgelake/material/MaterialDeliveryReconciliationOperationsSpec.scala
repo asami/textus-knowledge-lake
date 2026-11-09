@@ -9,7 +9,10 @@ import org.scalatest.GivenWhenThen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-/** Real PostgreSQL and controlled provider observations; no live provider writes. */
+/** Real PostgreSQL and controlled provider observations; no live provider writes.
+ * @since Nov.  9, 2026
+ * @version Nov.  9, 2026
+ */
 @org.scalatest.tags.Slow
 final class MaterialDeliveryReconciliationOperationsSpec extends AnyWordSpec with Matchers with GivenWhenThen with MaterialRegistrationPostgresqlSpec {
   import MaterialRegistrationPersistenceFixture.*

@@ -23,7 +23,7 @@ import org.simplemodeling.textus.knowledgelake.impl.KnowledgeLakePrimaryFactory
   * Controlled responses contain no real cloud credentials or SQL mutations.
   * @since Oct. 25, 2026
   *  version Oct. 28, 2026
-  * @version Nov.  6, 2026
+  * @version Nov.  9, 2026
   */
 final class MaterialPackageReferenceSpec extends AnyWordSpec with Matchers with GivenWhenThen {
   import MaterialPackageReadSpec.*
@@ -101,7 +101,7 @@ final class MaterialPackageReferenceSpec extends AnyWordSpec with Matchers with 
           session.component.operationDefinitions.map(_.name).toSet shouldBe Set("searchMaterials", "getMaterial", "readOriginal",
             "createMaterialRegistration", "getMaterialRegistration", "materializeMaterial",
             "getDestination", "prepare", "findForRequest", "get", "uploadOriginal", "finalize",
-            "prepareOriginalTransfer", "confirmOriginalTransfer")
+            "prepareOriginalTransfer", "confirmOriginalTransfer", "reconcile")
           session.component._material_reference_mode shouldBe MaterialReferenceRuntime.Mode.Packages
           session.component.materialCatalog shouldBe None
           session.component._material_package_catalog should not be empty

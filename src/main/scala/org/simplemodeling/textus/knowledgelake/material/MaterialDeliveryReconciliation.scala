@@ -3,7 +3,10 @@ package org.simplemodeling.textus.knowledgelake.material
 import io.circe.Json
 import org.goldenport.cncf.filestore.*
 
-/** Private durable native collection-write evidence. It is never caller supplied. */
+/** Private durable native collection-write evidence. It is never caller supplied.
+ * @since Nov.  9, 2026
+ * @version Nov.  9, 2026
+ */
 private[knowledgelake] final case class MaterialDeliveryCollectionCheckpoint(
   slot: String, reservation: FileStoreCollectionReservation, observation: String
 ) {
