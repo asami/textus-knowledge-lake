@@ -400,7 +400,7 @@ optimistic revision. Collection creation reserves an opaque native identity and
 durably retains its complete owner/operation/parent/name binding before submission.
 A confirmed observation may checkpoint that same identity. A retained native
 pre-dispatch refusal can release the checkpoint for a later explicit operation;
-unknown, possibly dispatched, missing and legacy observations remain blocked.
+unknown, possibly dispatched and missing observations remain blocked. An initial empty legacy root attempt may be released only by an exact, separately provisioned trusted host adjudication of the original pre-dispatch refusal; it records a private audit and performs no provider operation. All other legacy states remain blocked.
 Inspection reads only the reserved identity and does not create a resource.
 Provider identities and observations remain private; a display name or HTTP
 status alone is never proof of absence or identity. No provider create is replayed

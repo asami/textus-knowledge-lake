@@ -10,7 +10,7 @@ import org.simplemodeling.model.datatype.EntityId
  * its presence forbids automatic provider replay. Scoped upload sessions are
  * private delivery state; no general server credential is retained here.
  * @since   Oct. 25, 2026
- * @version Nov.  6, 2026
+ * @version Nov.  9, 2026
  */
 private[knowledgelake] final case class MaterialDeliveryFile(path: String, reference: FileStoreRef, parent: FileStoreRef, storageRoot: Option[FileStoreRef] = None) {
   def json: Json = Json.obj("path" -> Json.fromString(path), "reference" -> MaterialDeliveryDocument.referenceJson(reference),
@@ -28,7 +28,8 @@ private[knowledgelake] final case class MaterialDeliveryDocument(
   transferMethod: String = "tklMultipart", transferReason: Option[String] = None,
   transfers: Vector[MaterialDeliveryDirectTransfer] = Vector.empty,
   verifications: Vector[MaterialDeliveryVerification] = Vector.empty,
-  collectionCheckpoint: Option[MaterialDeliveryCollectionCheckpoint] = None
+  collectionCheckpoint: Option[MaterialDeliveryCollectionCheckpoint] = None,
+  legacyAudit: Option[MaterialDeliveryLegacyAudit] = None
 ) {
   def json: Json = Json.obj("schema" -> Json.fromString("textus.material-delivery/1"),
     "requestId" -> Json.fromString(requestId), "configuration" -> configuration.json,
@@ -40,7 +41,8 @@ private[knowledgelake] final case class MaterialDeliveryDocument(
     "busy" -> busy.fold(Json.Null)(Json.fromString), "transferMethod" -> Json.fromString(transferMethod),
     "transferReason" -> transferReason.fold(Json.Null)(Json.fromString), "transfers" -> Json.fromValues(transfers.map(_.json)),
     "verifications" -> Json.fromValues(verifications.map(_.json)),
-    "collectionCheckpoint" -> collectionCheckpoint.fold(Json.Null)(_.json))
+    "collectionCheckpoint" -> collectionCheckpoint.fold(Json.Null)(_.json),
+    "legacyAudit" -> legacyAudit.fold(Json.Null)(_.json))
   def originalUploaded(resourceId: String): Boolean = files.exists(_.path == s"assets/$resourceId")
   def verification(resourceId: String): MaterialDeliveryVerification =
     verifications.find(_.resourceId == resourceId).getOrElse(MaterialDeliveryVerification(resourceId))
@@ -75,7 +77,7 @@ private[knowledgelake] object MaterialDeliveryDocument {
   def parseC(json: Json): Consequence[MaterialDeliveryDocument] = {
     val admitted = for {
       fields <- json.asObject.filter(value => _keys.subsetOf(value.keys.toSet) &&
-        (value.keys.toSet -- _keys).subsetOf(Set("transferMethod", "transferReason", "transfers", "verifications", "collectionCheckpoint")))
+        (value.keys.toSet -- _keys).subsetOf(Set("transferMethod", "transferReason", "transfers", "verifications", "collectionCheckpoint", "legacyAudit")))
       _ <- fields("schema").filter(_ == Json.fromString("textus.material-delivery/1"))
       request <- fields("requestId").flatMap(_.asString).filter(_.matches("[A-Za-z0-9][A-Za-z0-9_-]{0,127}"))
       configuration <- fields("configuration").flatMap(value => MaterialDeliveryConfiguration.parseC(value.noSpaces).toOption)
@@ -127,6 +129,8 @@ private[knowledgelake] object MaterialDeliveryDocument {
           MaterialDeliveryIntegrity.consistent(value, original, files.find(_.path == "assets/" + value.resourceId)))))(())
       checkpoint <- fields("collectionCheckpoint").fold[Option[Option[MaterialDeliveryCollectionCheckpoint]]](Some(None))(value =>
         if (value.isNull) Some(None) else MaterialDeliveryCollectionCheckpoint.parse(value).map(Some(_)))
+      audit <- fields("legacyAudit").fold[Option[Option[MaterialDeliveryLegacyAudit]]](Some(None))(value =>
+        if (value.isNull) Some(None) else MaterialDeliveryLegacyAudit.parse(value).map(Some(_)))
       _ <- Option.when(checkpoint.forall(value => {
         val parent = if (value.slot == "root") Some(FileStoreRef(configuration.storeName, configuration.parentKey)) else root
         val label = if (value.slot == "root") registration.location.logicalPath.split('/').last else value.slot
@@ -142,7 +146,7 @@ private[knowledgelake] object MaterialDeliveryDocument {
           value.storageRoot.forall(_.store == configuration.storeName)) &&
         (files.flatMap(value => Vector(value.reference, value.parent)) ++ Vector(root, assets, derived, manifest).flatten)
           .forall(_.store == configuration.storeName))(())
-    } yield MaterialDeliveryDocument(request, configuration, identity, registration, root, assets, derived, files, manifest, busy, method, reason, transfers, verifications, checkpoint)
+    } yield MaterialDeliveryDocument(request, configuration, identity, registration, root, assets, derived, files, manifest, busy, method, reason, transfers, verifications, checkpoint, audit)
     admitted.fold[Consequence[MaterialDeliveryDocument]](Consequence.argumentInvalid("Invalid Material delivery document"))(Consequence.success)
   }
   def referenceJson(reference: FileStoreRef): Json = Json.obj("store" -> Json.fromString(reference.store), "key" -> Json.fromString(reference.key))

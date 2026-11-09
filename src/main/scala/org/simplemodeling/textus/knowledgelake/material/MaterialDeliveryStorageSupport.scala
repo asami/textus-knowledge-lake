@@ -14,7 +14,7 @@ import org.simplemodeling.model.datatype.EntityId
 /* Checkpoint each confirmed native FileStore effect before the next effect.
  * Unknown writes remain busy and require reconciliation, never create replay.
  * @since   Oct. 25, 2026
- * @version Nov.  6, 2026
+ * @version Nov.  9, 2026
  */
 private[knowledgelake] trait MaterialDeliveryStorageSupport extends MaterialDeliverySupport {
   protected final def prepare_direct_transfer(identity: EntityId, resourceId: String): ExecUowM[org.goldenport.record.Record] = for {
@@ -321,9 +321,17 @@ private[knowledgelake] trait MaterialDeliveryStorageSupport extends MaterialDeli
     loaded <- load_delivery(identity)
     _ <- exec_from(if (loaded.revision.value == revision) Consequence.unit
       else delivery_conflict("reconcile", "delivery-revision-mismatch"))
-    checkpoint <- exec_from(loaded.entity.document.collectionCheckpoint.fold[Consequence[MaterialDeliveryCollectionCheckpoint]](
-      delivery_conflict("reconcile", "delivery-observation-unavailable"))(Consequence.success))
     subject <- exec_from(delivery_subject())
+    result <- loaded.entity.document.collectionCheckpoint match {
+      case None => for {
+        configuration <- exec_from(delivery_configuration())
+        decision = core.component.collect { case runtime: MaterialDeliveryRuntime => runtime._material_delivery_legacy_decision }.flatten
+        admitted <- exec_from(decision.filter(_.admits(identity.value, subject, revision, loaded.entity.document, configuration))
+          .fold[Consequence[MaterialDeliveryLegacyDecision]](delivery_conflict("reconcile", "delivery-observation-unavailable"))(Consequence.success))
+        saved <- save_delivery(loaded, loaded.entity.document.copy(busy = None,
+          legacyAudit = Some(MaterialDeliveryLegacyAudit(admitted.source, revision))))
+      } yield saved
+      case Some(checkpoint) => for {
     _ <- exec_from(_validate_collection_checkpoint(identity, subject, loaded.entity.document, checkpoint))
     result <- checkpoint.observation match {
       case "notDispatched" => save_delivery(loaded, loaded.entity.document.copy(busy = None, collectionCheckpoint = None))
@@ -343,6 +351,8 @@ private[knowledgelake] trait MaterialDeliveryStorageSupport extends MaterialDeli
         next <- if (saved.entity.document.collectionCheckpoint.exists(_.observation == "confirmed")) _complete_collection(saved)
           else exec_from(Consequence.success(saved))
       } yield next
+    }
+      } yield result
     }
   } yield result.entity
 

@@ -11,6 +11,39 @@ import org.scalatest.wordspec.AnyWordSpec
  * @version Nov.  9, 2026
  */
 final class MaterialDeliveryReconciliationSpec extends AnyWordSpec with Matchers with GivenWhenThen {
+  "A trusted legacy decision" should {
+    "round trip only the explicit host adjudication across source references" in {
+      Given("the complete contribution and destination with arbitrary retained source references")
+      val contribution = MaterialRegistrationOperationsFixture.contribution
+      val configuration = MaterialDeliveryOperationsFixture.configuration()
+      val references = Gen.nonEmptyListOf(Gen.alphaNumChar).map(_.mkString)
+      When("the host control is parsed")
+      val checked = Test.check(Test.Parameters.default.withMinSuccessfulTests(100), Prop.forAll(references) { source =>
+        val json = io.circe.Json.obj(
+          "schema" -> io.circe.Json.fromString("textus.material-delivery-legacy-decision/1"),
+          "adjudication" -> io.circe.Json.fromString("hostAdjudicatedOriginalRefusalBeforeDispatch"),
+          "owner" -> io.circe.Json.fromString("owner"), "delivery" -> io.circe.Json.fromString("delivery"),
+          "request" -> io.circe.Json.fromString("request"), "revision" -> io.circe.Json.fromLong(4),
+          "contribution" -> contribution, "configuration" -> configuration, "source" -> io.circe.Json.fromString(source))
+        val parsed = MaterialDeliveryLegacyRecovery.parseC(json.noSpaces)
+        val raw = json.noSpaces
+        val duplicates = Vector(
+          raw.replace("\"owner\":\"owner\"", "\"owner\":\"foreign\",\"owner\":\"owner\""),
+          raw.replace("\"delivery\":\"delivery\"", "\"delivery\":\"delivery\",\"delivery\":\"foreign\""),
+          raw.replace("\"adjudication\":", "\"adjudication\":\"unknown\",\"adjudication\":"),
+          raw.replace("\"title\":", "\"title\":\"forged\",\"title\":"),
+          raw.replace("\"parentKey\":", "\"parentKey\":\"foreign\",\"parentKey\":")
+        )
+        parsed.isSuccess && parsed.TAKE.source == source && duplicates.forall(_ != raw) &&
+          duplicates.forall(value => !MaterialDeliveryLegacyRecovery.parseC(value).isSuccess) &&
+          !MaterialDeliveryLegacyRecovery.parseC(json.mapObject(_.add("adjudication", io.circe.Json.fromString("unknown"))).noSpaces).isSuccess &&
+          !MaterialDeliveryLegacyRecovery.parseC(json.mapObject(_.remove("source")).noSpaces).isSuccess
+      })
+      Then("only a complete, explicitly adjudicated decision is admitted")
+      checked.passed shouldBe true
+    }
+  }
+
   "A retained collection reservation" should {
     "round trip its exact binding and observation over many opaque identities" in {
       Given("provider-allocated identities and every durable observation state")

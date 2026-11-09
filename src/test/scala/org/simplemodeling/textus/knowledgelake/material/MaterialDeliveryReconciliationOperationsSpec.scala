@@ -50,6 +50,86 @@ final class MaterialDeliveryReconciliationOperationsSpec extends AnyWordSpec wit
   }
 
   "Collection reconciliation" should {
+    "apply only an exact trusted legacy decision and retain its audit after reopen" in {
+      Given("an existing initial legacy root attempt in PostgreSQL")
+      withDatabase(native_container) { database =>
+        prepareDatabase(database)
+        val peer = new CheckpointPeer(database, new HttpPeer(database))
+        val retained = withSession(database, parameters(), prepare = prepare()) { session =>
+          val contribution = MaterialRegistrationOperationsFixture.contribution.mapObject { values =>
+            values.add("originals", Json.fromValues(values("originals").get.asArray.get.map(_.mapObject(_.add("contentDigest",
+              Json.obj("algorithm" -> Json.fromString("sha256"), "value" -> Json.fromString("0" * 64)))))))
+          }
+          val result = record(session.query("prepare", Vector("requestId" -> requestId, "contribution" -> contribution), driver = Some(peer), service = "MaterialDelivery"))
+          val reference = result.getString("deliveryRef").get
+          val current = documents(database).head
+          val legacy = current.mapObject(_.remove("collectionCheckpoint").add("busy", Json.fromString("collection:root")))
+          _replace_document(database, legacy)
+          val revision = _revision(database)
+          session.query("reconcile", Vector("deliveryRef" -> reference, "revision" -> revision), driver = Some(peer), service = "MaterialDelivery").isSuccess shouldBe false
+          (reference, revision, legacy)
+        }
+        val document = retained._3
+        val owner = document.hcursor.downField("registration").get[String]("owner").toOption.get
+        val decision = Json.obj("schema" -> Json.fromString("textus.material-delivery-legacy-decision/1"),
+          "adjudication" -> Json.fromString("hostAdjudicatedOriginalRefusalBeforeDispatch"),
+          "owner" -> Json.fromString(owner), "delivery" -> Json.fromString(retained._1),
+          "request" -> document.hcursor.downField("requestId").focus.get,
+          "revision" -> Json.fromLong(retained._2), "contribution" -> document.hcursor.downField("registration").downField("contribution").focus.get,
+          "configuration" -> document.hcursor.downField("configuration").focus.get, "source" -> Json.fromString("reviewed-fixture"))
+        val control = MaterialDeliveryLegacyRecovery.parseC(decision.noSpaces).TAKE
+        val decoded = MaterialDeliveryDocument.parseC(document).TAKE
+        val config = Some(decoded.configuration)
+        Given("the host decision and the restored private document")
+        control.admits(retained._1, owner, retained._2, decoded, config) shouldBe true
+        When("any owner, identity, revision, intent, destination or pending state differs")
+        Vector(
+          control.copy(owner = "other"), control.copy(delivery = "other"), control.copy(request = "other"),
+          control.copy(revision = retained._2 + 1), control.copy(contribution = Json.obj()),
+          control.copy(configuration = decoded.configuration.copy(parentKey = "other"))
+        ).foreach(_.admits(retained._1, owner, retained._2, decoded, config) shouldBe false)
+        control.admits(retained._1, owner, retained._2, decoded, None) shouldBe false
+        control.admits(retained._1, owner, retained._2, decoded.copy(busy = Some("collection:assets")), config) shouldBe false
+        control.admits(retained._1, owner, retained._2, decoded.copy(root = Some(org.goldenport.cncf.filestore.FileStoreRef(decoded.configuration.storeName, "existing"))), config) shouldBe false
+        control.admits(retained._1, owner, retained._2, decoded.copy(legacyAudit = Some(MaterialDeliveryLegacyAudit("copied", retained._2))), config) shouldBe false
+        Then("every mismatch denies the local transition")
+        val effects = peer.delegate.effects.size
+        val params = parameters() + (MaterialDeliveryLegacyRecovery.configurationKey.name -> decision.noSpaces)
+        withSession(database, params, prepare = prepare()) { session =>
+          When("the owner requests the wrong revision or another principal requests the retained revision")
+          session.query("reconcile", Vector("deliveryRef" -> retained._1, "revision" -> (retained._2 - 1)), driver = Some(peer), service = "MaterialDelivery").isSuccess shouldBe false
+          session.query("reconcile", Vector("deliveryRef" -> retained._1, "revision" -> retained._2), session = Some("foreign-session"), driver = Some(peer), service = "MaterialDelivery").isSuccess shouldBe false
+          documents(database).head shouldBe document
+          When("two owner requests compete for the same revision")
+          val executor = java.util.concurrent.Executors.newFixedThreadPool(2)
+          val gate = new java.util.concurrent.CountDownLatch(1)
+          val outcomes = try {
+            val tasks = Vector.fill(2)(executor.submit(new java.util.concurrent.Callable[Boolean] {
+              def call(): Boolean = {
+                gate.await()
+                session.query("reconcile", Vector("deliveryRef" -> retained._1, "revision" -> retained._2), service = "MaterialDelivery").isSuccess
+              }
+            }))
+            gate.countDown()
+            tasks.map(_.get(30, java.util.concurrent.TimeUnit.SECONDS))
+          } finally executor.shutdownNow()
+          outcomes.count(identity) shouldBe 1
+          session.query("reconcile", Vector("deliveryRef" -> retained._1, "revision" -> retained._2), driver = Some(peer), service = "MaterialDelivery").isSuccess shouldBe false
+          Then("one transition wins, the private audit preserves the adjudication and no provider access occurred")
+          val saved = documents(database).head
+          saved.hcursor.get[Option[String]]("busy").toOption.get shouldBe None
+          saved.hcursor.downField("legacyAudit").get[String]("source").toOption shouldBe Some("reviewed-fixture")
+          saved.hcursor.downField("legacyAudit").get[Long]("previousRevision").toOption shouldBe Some(retained._2)
+          peer.delegate.effects.size shouldBe effects
+        }
+        withSession(database, parameters(), prepare = prepare()) { session =>
+          Then("the audit survives reopening without conferring runtime authority")
+          record(session.query("get", Vector("deliveryRef" -> retained._1), service = "MaterialDelivery")).getString("state") shouldBe Some("prepared")
+          documents(database).head.hcursor.downField("legacyAudit").get[String]("source").toOption shouldBe Some("reviewed-fixture")
+        }
+      }
+    }
+
     "reject every mismatched durable binding before provider access or transition" in {
       Given("an isolated test-owned PostgreSQL delivery with a retained unknown native reservation")
       withDatabase(native_container) { database =>

@@ -197,17 +197,29 @@ optimistic revision. Collection creation reserves an opaque native identity and
 durably retains its complete owner/operation/parent/name binding before submission.
 A confirmed observation may checkpoint that same identity. A retained native
 pre-dispatch refusal can release the checkpoint for a later explicit operation;
-unknown, possibly dispatched, missing and legacy observations remain blocked.
+unknown, possibly dispatched and missing observations remain blocked except for the narrowly adjudicated legacy case below.
 Inspection reads only the reserved identity and does not create a resource.
 Provider identities and observations remain private; a display name or HTTP
 status alone is never proof of absence or identity. No provider create is replayed
 by reconciliation. Existing unfinished legacy checkpoints do not acquire a
 reservation retroactively.
 
-The optional host key `material.delivery.legacy-recovery-decision` is declared
-for a separately owned legacy-recovery consumer. Its declaration alone does not
-authorize or implement recovery; the current refusal of unfinished legacy
-checkpoints remains unchanged until that consumer is implemented and qualified.
+For the initial legacy `collection:root` busy state with no reservation or prior
+placement, an optional trusted host decision can authorize the existing owner to
+reconcile exactly one delivery, request, revision, complete contribution and current
+destination configuration. The decision records an operator's adjudication of the
+original refusal before dispatch, with a source reference; it is not a native
+observation. An absent, invalid or mismatched decision blocks. The local CAS clears
+only the busy marker and stores a private audit of the decision and previous state;
+no provider access or registration occurs. Stored audit data cannot grant authority.
+The host must independently review original evidence before provisioning a decision.
+The optional component parameter `material.delivery.legacy-recovery-decision` is a
+JSON object with exactly `schema` (`textus.material-delivery-legacy-decision/1`),
+`adjudication` (`hostAdjudicatedOriginalRefusalBeforeDispatch`), `owner`, `delivery`,
+`request`, `revision`, the entire `contribution` with each original SHA-256 digest, the entire trusted `configuration`,
+and a nonempty `source` reference. It is host initialization data, never an HTTP
+parameter or part of the saved provider configuration. Invalid configuration fails
+initialization; absence denies this continuation.
 
 A reserved-ID confirmation identifies the retained resource only when the full
 provider binding matches. A 404, malformed or incomplete response, and any
