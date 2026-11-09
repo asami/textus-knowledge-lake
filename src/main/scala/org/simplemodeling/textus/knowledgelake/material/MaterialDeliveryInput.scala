@@ -1,6 +1,7 @@
 package org.simplemodeling.textus.knowledgelake.material
 
 import org.goldenport.Consequence
+import org.goldenport.cncf.config.ComponentParameterKey
 import org.goldenport.http.HttpRequest
 import org.goldenport.protocol.{Property, Request}
 import org.goldenport.record.{Field, Record}
@@ -9,7 +10,7 @@ import org.goldenport.record.{Field, Record}
   * header-derived properties. An Authorization field in the body is still extra.
   *
   * @since Oct. 25, 2026
-  * @version Nov.  6, 2026
+  * @version Nov.  9, 2026
   */
 private[knowledgelake] object MaterialDeliveryInput {
   private val _invalid = "Invalid Material delivery input fields"
@@ -49,4 +50,9 @@ private[knowledgelake] object MaterialDeliveryInput {
 
   def recordC(request: Request, keys: Set[String]): Consequence[Record] =
     propertiesC(request, keys).map(properties => Record.create(properties.map(property => property.name -> property.value)))
+}
+
+private[knowledgelake] object MaterialDeliveryLegacyRecovery {
+  val configurationKey: ComponentParameterKey[String] =
+    ComponentParameterKey.optionalString("material.delivery.legacy-recovery-decision")
 }

@@ -5,12 +5,12 @@ import org.goldenport.cncf.config.ComponentParameterKey
 import org.goldenport.cncf.filestore.GoogleDriveConnectionRuntime
 import org.goldenport.cncf.oauth.OAuthConnectionRuntime
 import org.simplemodeling.textus.knowledgelake.KnowledgeLakeComponent
-import org.simplemodeling.textus.knowledgelake.material.{MaterialDeliveryConfiguration, MaterialDeliveryRuntime, MaterialReferenceRuntime, MaterialRegistrationConfiguration, MaterialRegistrationRuntime, MaterialParticipantConfiguration, MaterialParticipantRuntime}
+import org.simplemodeling.textus.knowledgelake.material.{MaterialDeliveryConfiguration, MaterialDeliveryLegacyRecovery, MaterialDeliveryRuntime, MaterialReferenceRuntime, MaterialRegistrationConfiguration, MaterialRegistrationRuntime, MaterialParticipantConfiguration, MaterialParticipantRuntime}
 
 /*
  * @since   Oct. 21, 2026
  *  version Oct. 25, 2026
- * @version Nov.  6, 2026
+ * @version Nov.  9, 2026
  */
 final class ComponentFactory extends Component.BundleFactory {
   override def primaryFactory: Component.PrimaryComponentFactory = KnowledgeLakePrimaryFactory
@@ -23,7 +23,8 @@ abstract class KnowledgeLakeParticipantFactoryBase extends KnowledgeLakeComponen
       GoogleDriveConnectionRuntime.configurationKey,
       MaterialReferenceRuntime.modeKey, MaterialReferenceRuntime.catalogKey, MaterialReferenceRuntime.registeredBindingsKey,
       MaterialReferenceRuntime.packagesKey,
-      MaterialRegistrationConfiguration.configurationKey, MaterialDeliveryConfiguration.configurationKey, MaterialParticipantConfiguration.configurationKey)
+      MaterialRegistrationConfiguration.configurationKey, MaterialDeliveryConfiguration.configurationKey, MaterialParticipantConfiguration.configurationKey,
+      MaterialDeliveryLegacyRecovery.configurationKey)
 
   protected final def component_core(name: String, componentId: ComponentId): Component.Core =
     spec_create(name, componentId, Vector(KnowledgeLakeComponent.MaterialService, KnowledgeLakeComponent.MaterialDeliveryService))

@@ -204,6 +204,11 @@ status alone is never proof of absence or identity. No provider create is replay
 by reconciliation. Existing unfinished legacy checkpoints do not acquire a
 reservation retroactively.
 
+The optional host key `material.delivery.legacy-recovery-decision` is declared
+for a separately owned legacy-recovery consumer. Its declaration alone does not
+authorize or implement recovery; the current refusal of unfinished legacy
+checkpoints remains unchanged until that consumer is implemented and qualified.
+
 A reserved-ID confirmation identifies the retained resource only when the full
 provider binding matches. A 404, malformed or incomplete response, and any
 nonconfirming observation remain unknown: they do not establish zero resources.
