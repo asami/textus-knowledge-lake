@@ -44,6 +44,19 @@ final class MaterialDeliveryInputSpec extends AnyWordSpec with Matchers with Giv
       result.TAKE.contribution shouldBe contribution
     }
 
+    "admit only the reconciliation identity and optimistic revision" in {
+      Given("a delivery reference and current revision")
+      val request = _request("reconcile", Vector("deliveryRef" -> "delivery-1", "revision" -> 3L))
+      When("the generated command and closed business-field admission inspect the input")
+      val command = MaterialDeliveryReconcileCommand.create(request)
+      val admitted = MaterialDeliveryInput.recordC(request, Set("deliveryRef", "revision"))
+      val extra = _request("reconcile", Vector("deliveryRef" -> "delivery-1", "revision" -> 3L, "proof" -> "absent"))
+      Then("no caller-provided observation or provider reference is accepted")
+      command.isSuccess shouldBe true
+      admitted.isSuccess shouldBe true
+      MaterialDeliveryInput.recordC(extra, Set("deliveryRef", "revision")).isSuccess shouldBe false
+    }
+
     "accept an already binary original without interpreting it as text" in {
       Given("an exact logical original selector and non-text binary bytes")
       val bytes = Array[Byte](0, -1, -128, 10, 0)

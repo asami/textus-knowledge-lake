@@ -21,6 +21,7 @@ private[knowledgelake] final class MaterialDeliveryServiceFactory extends Knowle
   override def createPrepareActionCall(core: ActionCall.Core, action: MaterialDeliveryPrepareCommand): PrepareActionCall = PrepareCall(core, action)
   override def createFindForRequestActionCall(core: ActionCall.Core, action: MaterialDeliveryRequestQuery): FindForRequestActionCall = FindCall(core, action)
   override def createGetActionCall(core: ActionCall.Core, action: MaterialDeliverySelectionQuery): GetActionCall = GetCall(core, action)
+  override def createReconcileActionCall(core: ActionCall.Core, action: MaterialDeliveryReconcileCommand): ReconcileActionCall = ReconcileCall(core, action)
   override def createUploadOriginalActionCall(core: ActionCall.Core, action: MaterialDeliveryUploadCommand): UploadOriginalActionCall = UploadCall(core, action)
   override def createFinalizeActionCall(core: ActionCall.Core, action: MaterialDeliveryFinalizeCommand): FinalizeActionCall = FinalizeCall(core, action)
   override def createPrepareOriginalTransferActionCall(core: ActionCall.Core, action: MaterialDeliveryDirectPrepareCommand): PrepareOriginalTransferActionCall = DirectPrepareCall(core, action)
@@ -68,6 +69,17 @@ private[knowledgelake] object MaterialDeliveryServiceFactory {
       identity <- exec_from(EntityId.parse(query.deliveryRef))
       record <- load_delivery(identity)
       result <- delivery_projection(record.entity)
+    } yield OperationResponse.RecordResponse(result)
+  }
+  private final case class ReconcileCall(core: ActionCall.Core, override val action: MaterialDeliveryReconcileCommand)
+      extends ReconcileActionCall with MaterialDeliveryStorageSupport {
+    protected def build_Program: ExecUowM[OperationResponse] = for {
+      _ <- exec_from(_admit(action.request, Set("deliveryRef", "revision")))
+      input <- exec_from(MaterialDeliveryInput.recordC(action.request, Set("deliveryRef", "revision")))
+      command <- exec_from(dto.MaterialDeliveryReconcileCommand.createC(input))
+      identity <- exec_from(EntityId.parse(command.deliveryRef))
+      record <- reconcile_delivery(identity, command.revision)
+      result <- delivery_projection(record)
     } yield OperationResponse.RecordResponse(result)
   }
   private final case class UploadCall(core: ActionCall.Core, override val action: MaterialDeliveryUploadCommand)

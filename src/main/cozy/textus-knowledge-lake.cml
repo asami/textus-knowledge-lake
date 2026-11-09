@@ -549,6 +549,51 @@ QueryAction
 
 MaterialDeliverySnapshot
 
+#### reconcile
+
+##### TYPE
+
+COMMAND
+
+##### ACCESS
+
+###### POLICY
+
+authenticated_only
+
+##### SUMMARY
+
+Reconcile a retained native collection observation for the delivery owner.
+
+##### DESCRIPTION
+
+Require the exact delivery reference and current revision. Inspect only the retained
+reserved identity. Legacy attempts without a reservation and unknown outcomes stay
+blocked; this operation never creates a provider resource.
+
+##### INPUT
+
+###### VALUE
+
+####### MaterialDeliveryReconcileCommand
+
+######## EXTENDS
+
+CommandAction
+
+######## ATTRIBUTE
+
+| name | type | multiplicity |
+|------|------|--------------|
+| deliveryRef | string | 1 |
+| revision | long | 1 |
+
+##### OUTPUT
+
+###### TYPE
+
+MaterialDeliverySnapshot
+
 #### uploadOriginal
 
 ##### TYPE

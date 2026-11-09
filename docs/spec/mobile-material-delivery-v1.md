@@ -371,7 +371,7 @@ retain their old four fields. Snapshot failures add `actionRequired` as
 `materialRef` exists only for actual registration. Ordinary status includes no
 physical file/root IDs, session URI, provider body or credentials. Safe diagnostics
 do not echo digests. The operation names and inputs are unchanged; CML declares
-optional json/string/int outputs, with no generated Scala edits or ninth operation.
+optional json/string/int outputs, with no generated Scala edits or ninth operation in DU-02; collection reconciliation is specified separately below.
 The native Record projection carries contentDigest as a nested Record with exact
 algorithm/value fields; checked `RecordEncoder.jsonC` specifications require the
 same JSON object on the wire. Private document and opaque JSON trees retain
@@ -390,3 +390,27 @@ Registered setup assertions reconstruct registration through beginC/packageC/
 completeC and compare exact JSON with an independent JDBC registration row
 before reopening. These diagnostic assertions do not establish or repair the
 unresolved historical legacy setup mismatch; parent validation remains required.
+
+
+## Collection-write reconciliation
+
+`MaterialDelivery.reconcile` is an authenticated command taking exactly the opaque
+`deliveryRef` and current `revision`. It verifies the retained delivery owner and
+optimistic revision. Collection creation reserves an opaque native identity and
+durably retains its complete owner/operation/parent/name binding before submission.
+A confirmed observation may checkpoint that same identity. A retained native
+pre-dispatch refusal can release the checkpoint for a later explicit operation;
+unknown, possibly dispatched, missing and legacy observations remain blocked.
+Inspection reads only the reserved identity and does not create a resource.
+Provider identities and observations remain private; a display name or HTTP
+status alone is never proof of absence or identity. No provider create is replayed
+by reconciliation. Existing unfinished legacy checkpoints do not acquire a
+reservation retroactively.
+
+A reserved-ID confirmation identifies the retained resource only when the full
+provider binding matches. A 404, malformed or incomplete response, and any
+nonconfirming observation remain unknown: they do not establish zero resources.
+A display-name match, including one or several same-name children, cannot identify
+the attempted create. The operation performs no child-name scan to produce an
+apparent zero, one or ambiguous proof. A reservation interrupted before it is
+checkpointed also remains blocked; no new reservation is substituted on retry.

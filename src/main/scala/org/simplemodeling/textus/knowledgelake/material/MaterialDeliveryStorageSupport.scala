@@ -230,22 +230,121 @@ private[knowledgelake] trait MaterialDeliveryStorageSupport extends MaterialDeli
     val document = snapshot.entity.document
     val retained = slot match { case "root" => document.root; case "assets" => document.assets; case _ => document.derived }
     if (retained.isDefined) exec_from(Consequence.success(snapshot))
-    else {
-      val parent = if (slot == "root") FileStoreRef(store.name, document.configuration.parentKey) else document.root.get
-      val label = if (slot == "root") document.registration.location.logicalPath.split('/').last else slot
-      for {
-        begun <- save_delivery(snapshot, document.copy(busy = Some("collection:" + slot)))
-        metadata <- store.createCollection(parent, label)
-        reference <- exec_from(_confirmation(metadata, parent, label, FileStoreKind.Collection, None, None, begun.entity.document))
-        next = slot match {
-          case "root" => begun.entity.document.copy(root = Some(reference), busy = None)
-          case "assets" => begun.entity.document.copy(assets = Some(reference), busy = None)
-          case _ => begun.entity.document.copy(derived = Some(reference), busy = None)
-        }
-        saved <- save_delivery(begun, next)
-      } yield saved
+    else store match {
+      case observed: ObservedCollectionFileStore =>
+        val parent = if (slot == "root") FileStoreRef(store.name, document.configuration.parentKey) else document.root.get
+        val label = if (slot == "root") document.registration.location.logicalPath.split('/').last else slot
+        val binding = FileStoreWriteBinding(snapshot.entity.id.value + ":collection:" + slot,
+          document.registration.owner.value, parent, label)
+        for {
+          reserving <- save_delivery(snapshot, document.copy(busy = Some("reservation:" + slot)))
+          reservation <- observed.reserveCollection(binding)
+          _ <- exec_from(if (reservation.binding == binding && reservation.reference.store == parent.store &&
+            !((Vector(Some(parent), document.root, document.assets, document.derived, document.manifest).flatten ++
+              document.files.map(_.reference)).contains(reservation.reference)) &&
+            reservation.storageRoot.forall(_.store == parent.store)) Consequence.unit
+            else Consequence.resourceInvalid("Invalid Material delivery collection reservation"))
+          checkpoint = MaterialDeliveryCollectionCheckpoint(slot, reservation, "reserved")
+          begun <- save_delivery(reserving, reserving.entity.document.copy(busy = Some("collection:" + slot), collectionCheckpoint = Some(checkpoint)))
+          observation <- observed.createReservedCollection(reservation)
+          saved <- _record_collection_observation(begun, checkpoint, observation)
+          result <- if (saved.entity.document.collectionCheckpoint.exists(_.observation == "confirmed"))
+            _complete_collection(saved)
+          else exec_from(delivery_conflict("collection", "delivery-reconciliation-required"))
+        } yield result
+      case _ => exec_from(Consequence.serviceUnavailable("Observed collection creation is unavailable"))
     }
   }
+
+  private def _record_collection_observation(snapshot: EntitySnapshot[MaterialDeliveryRecord],
+    checkpoint: MaterialDeliveryCollectionCheckpoint, observation: FileStoreWriteObservation): ExecUowM[EntitySnapshot[MaterialDeliveryRecord]] = {
+    val reservation = checkpoint.reservation
+    val state = if (!observation.matches(reservation)) "unknown" else observation.state match {
+      case FileStoreWriteState.NotDispatched => "notDispatched"
+      case FileStoreWriteState.PossiblyDispatched => "possiblyDispatched"
+      case FileStoreWriteState.Unknown => "unknown"
+      case FileStoreWriteState.Confirmed(metadata) =>
+        if (metadata.reference == reservation.reference && metadata.storageRoot == reservation.storageRoot &&
+          _confirmation(metadata, reservation.binding.parent, reservation.binding.name, FileStoreKind.Collection,
+            None, None, snapshot.entity.document).toOption.isDefined) "confirmed" else "unknown"
+    }
+    save_delivery(snapshot, snapshot.entity.document.copy(collectionCheckpoint = Some(checkpoint.copy(observation = state))))
+  }
+
+  private def _complete_collection(snapshot: EntitySnapshot[MaterialDeliveryRecord]): ExecUowM[EntitySnapshot[MaterialDeliveryRecord]] = {
+    val document = snapshot.entity.document
+    val checkpoint = document.collectionCheckpoint.get
+    val reference = checkpoint.reservation.reference
+    val next = checkpoint.slot match {
+      case "root" => document.copy(root = Some(reference))
+      case "assets" => document.copy(assets = Some(reference))
+      case _ => document.copy(derived = Some(reference))
+    }
+    save_delivery(snapshot, next.copy(busy = None, collectionCheckpoint = None))
+  }
+
+  private def _validate_collection_checkpoint(identity: EntityId, subject: String, document: MaterialDeliveryDocument,
+    checkpoint: MaterialDeliveryCollectionCheckpoint): Consequence[Unit] = {
+    val slot = checkpoint.slot
+    val reservation = checkpoint.reservation
+    val binding = reservation.binding
+    val expectedparent = slot match {
+      case "root" => Some(FileStoreRef(document.configuration.storeName, document.configuration.parentKey))
+      case "assets" | "derived" => document.root
+      case _ => None
+    }
+    val expectedlabel = if (slot == "root") document.registration.location.logicalPath.split('/').last else slot
+    val retained = slot match {
+      case "root" => document.root
+      case "assets" => document.assets
+      case "derived" => document.derived
+      case _ => Some(reservation.reference)
+    }
+    val identities = Vector(expectedparent, document.root, document.assets, document.derived, document.manifest).flatten ++
+      document.files.flatMap(value => Vector(value.reference, value.parent)) ++
+      document.transfers.flatMap(value => Vector(Some(value.upload.parent), value.fileReference).flatten)
+    val valid = Set("root", "assets", "derived")(slot) &&
+      document.registration.owner.value == subject && binding.caller == subject &&
+      binding.operation == identity.value + ":collection:" + slot &&
+      document.busy.contains("collection:" + slot) && retained.isEmpty &&
+      expectedparent.contains(binding.parent) && binding.name == expectedlabel &&
+      binding.parent.store == document.configuration.storeName &&
+      reservation.reference.store == document.configuration.storeName &&
+      reservation.reference.key.nonEmpty && reservation.reference.key.length <= 4096 &&
+      !reservation.reference.key.exists(Character.isISOControl) && !identities.contains(reservation.reference) &&
+      reservation.storageRoot.forall(value => value.store == document.configuration.storeName &&
+        value.key.nonEmpty && value.key.length <= 4096 && !value.key.exists(Character.isISOControl))
+    if (valid) Consequence.unit else delivery_conflict("reconcile", "delivery-binding-mismatch")
+  }
+
+  protected final def reconcile_delivery(identity: EntityId, revision: Long): ExecUowM[MaterialDeliveryRecord] = for {
+    loaded <- load_delivery(identity)
+    _ <- exec_from(if (loaded.revision.value == revision) Consequence.unit
+      else delivery_conflict("reconcile", "delivery-revision-mismatch"))
+    checkpoint <- exec_from(loaded.entity.document.collectionCheckpoint.fold[Consequence[MaterialDeliveryCollectionCheckpoint]](
+      delivery_conflict("reconcile", "delivery-observation-unavailable"))(Consequence.success))
+    subject <- exec_from(delivery_subject())
+    _ <- exec_from(_validate_collection_checkpoint(identity, subject, loaded.entity.document, checkpoint))
+    result <- checkpoint.observation match {
+      case "notDispatched" => save_delivery(loaded, loaded.entity.document.copy(busy = None, collectionCheckpoint = None))
+      case "confirmed" => _complete_collection(loaded)
+      case _ => for {
+        store <- exec_from(_store(loaded.entity.document.configuration))
+        observed <- exec_from(store match {
+          case value: ObservedCollectionFileStore => Consequence.success(value)
+          case _ => Consequence.serviceUnavailable("Observed collection inspection is unavailable")
+        })
+        observation <- observed.inspectReservedCollection(checkpoint.reservation)
+        inspected = observation.state match {
+          case FileStoreWriteState.Confirmed(_) => observation
+          case _ => FileStoreWriteObservation(checkpoint.reservation, FileStoreWriteState.Unknown)
+        }
+        saved <- _record_collection_observation(loaded, checkpoint, inspected)
+        next <- if (saved.entity.document.collectionCheckpoint.exists(_.observation == "confirmed")) _complete_collection(saved)
+          else exec_from(Consequence.success(saved))
+      } yield next
+    }
+  } yield result.entity
 
   private def _write_file(snapshot: EntitySnapshot[MaterialDeliveryRecord], store: FileStore, path: String,
     parent: FileStoreRef, media: String, content: Bag, busy: String): ExecUowM[EntitySnapshot[MaterialDeliveryRecord]] = for {

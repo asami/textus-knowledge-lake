@@ -9,6 +9,7 @@ import org.scalatest.wordspec.AnyWordSpec
   * @since   Nov.  6, 2026
   * @version Nov.  6, 2026
   */
+@org.scalatest.tags.Slow
 final class MaterialParticipantOperationsSpec extends AnyWordSpec with Matchers with GivenWhenThen
     with MaterialRegistrationPostgresqlSpec {
   import MaterialRegistrationPersistenceFixture.*

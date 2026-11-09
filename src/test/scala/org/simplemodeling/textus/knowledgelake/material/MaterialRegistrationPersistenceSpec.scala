@@ -28,6 +28,7 @@ import org.simplemodeling.model.statemachine.PostStatus
  * @since   Oct. 21, 2026
  * @version Oct. 21, 2026
  */
+@org.scalatest.tags.Slow
 final class MaterialRegistrationPersistenceSpec extends AnyWordSpec with Matchers with GivenWhenThen
     with MaterialRegistrationPostgresqlSpec {
   import MaterialRegistrationPersistenceFixture.*

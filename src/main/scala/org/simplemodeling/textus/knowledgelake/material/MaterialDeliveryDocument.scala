@@ -27,7 +27,8 @@ private[knowledgelake] final case class MaterialDeliveryDocument(
   busy: Option[String] = None,
   transferMethod: String = "tklMultipart", transferReason: Option[String] = None,
   transfers: Vector[MaterialDeliveryDirectTransfer] = Vector.empty,
-  verifications: Vector[MaterialDeliveryVerification] = Vector.empty
+  verifications: Vector[MaterialDeliveryVerification] = Vector.empty,
+  collectionCheckpoint: Option[MaterialDeliveryCollectionCheckpoint] = None
 ) {
   def json: Json = Json.obj("schema" -> Json.fromString("textus.material-delivery/1"),
     "requestId" -> Json.fromString(requestId), "configuration" -> configuration.json,
@@ -38,7 +39,8 @@ private[knowledgelake] final case class MaterialDeliveryDocument(
     "files" -> Json.fromValues(files.map(_.json)), "manifest" -> manifest.fold(Json.Null)(MaterialDeliveryDocument.referenceJson),
     "busy" -> busy.fold(Json.Null)(Json.fromString), "transferMethod" -> Json.fromString(transferMethod),
     "transferReason" -> transferReason.fold(Json.Null)(Json.fromString), "transfers" -> Json.fromValues(transfers.map(_.json)),
-    "verifications" -> Json.fromValues(verifications.map(_.json)))
+    "verifications" -> Json.fromValues(verifications.map(_.json)),
+    "collectionCheckpoint" -> collectionCheckpoint.fold(Json.Null)(_.json))
   def originalUploaded(resourceId: String): Boolean = files.exists(_.path == s"assets/$resourceId")
   def verification(resourceId: String): MaterialDeliveryVerification =
     verifications.find(_.resourceId == resourceId).getOrElse(MaterialDeliveryVerification(resourceId))
@@ -73,7 +75,7 @@ private[knowledgelake] object MaterialDeliveryDocument {
   def parseC(json: Json): Consequence[MaterialDeliveryDocument] = {
     val admitted = for {
       fields <- json.asObject.filter(value => _keys.subsetOf(value.keys.toSet) &&
-        (value.keys.toSet -- _keys).subsetOf(Set("transferMethod", "transferReason", "transfers", "verifications")))
+        (value.keys.toSet -- _keys).subsetOf(Set("transferMethod", "transferReason", "transfers", "verifications", "collectionCheckpoint")))
       _ <- fields("schema").filter(_ == Json.fromString("textus.material-delivery/1"))
       request <- fields("requestId").flatMap(_.asString).filter(_.matches("[A-Za-z0-9][A-Za-z0-9_-]{0,127}"))
       configuration <- fields("configuration").flatMap(value => MaterialDeliveryConfiguration.parseC(value.noSpaces).toOption)
@@ -123,6 +125,16 @@ private[knowledgelake] object MaterialDeliveryDocument {
         verifications.map(_.resourceId) == registration.contribution.originals.map(_.resourceId).filter(id => verifications.exists(_.resourceId == id)) &&
         verifications.forall(value => registration.contribution.originals.find(_.resourceId == value.resourceId).exists(original =>
           MaterialDeliveryIntegrity.consistent(value, original, files.find(_.path == "assets/" + value.resourceId)))))(())
+      checkpoint <- fields("collectionCheckpoint").fold[Option[Option[MaterialDeliveryCollectionCheckpoint]]](Some(None))(value =>
+        if (value.isNull) Some(None) else MaterialDeliveryCollectionCheckpoint.parse(value).map(Some(_)))
+      _ <- Option.when(checkpoint.forall(value => {
+        val parent = if (value.slot == "root") Some(FileStoreRef(configuration.storeName, configuration.parentKey)) else root
+        val label = if (value.slot == "root") registration.location.logicalPath.split('/').last else value.slot
+        val retained = value.slot match { case "root" => root; case "assets" => assets; case _ => derived }
+        busy.contains("collection:" + value.slot) && retained.isEmpty && parent.contains(value.reservation.binding.parent) &&
+          value.reservation.binding.name == label && value.reservation.binding.caller == registration.owner.value &&
+          value.reservation.reference.store == configuration.storeName
+      }))(())
       _ <- Option.when(files.map(_.path).distinct.size == files.size && files.map(_.reference).distinct.size == files.size &&
         files.forall(value => paths(value.path) &&
           !Vector(root, assets, derived, manifest).flatten.contains(value.reference) &&
@@ -130,7 +142,7 @@ private[knowledgelake] object MaterialDeliveryDocument {
           value.storageRoot.forall(_.store == configuration.storeName)) &&
         (files.flatMap(value => Vector(value.reference, value.parent)) ++ Vector(root, assets, derived, manifest).flatten)
           .forall(_.store == configuration.storeName))(())
-    } yield MaterialDeliveryDocument(request, configuration, identity, registration, root, assets, derived, files, manifest, busy, method, reason, transfers, verifications)
+    } yield MaterialDeliveryDocument(request, configuration, identity, registration, root, assets, derived, files, manifest, busy, method, reason, transfers, verifications, checkpoint)
     admitted.fold[Consequence[MaterialDeliveryDocument]](Consequence.argumentInvalid("Invalid Material delivery document"))(Consequence.success)
   }
   def referenceJson(reference: FileStoreRef): Json = Json.obj("store" -> Json.fromString(reference.store), "key" -> Json.fromString(reference.key))

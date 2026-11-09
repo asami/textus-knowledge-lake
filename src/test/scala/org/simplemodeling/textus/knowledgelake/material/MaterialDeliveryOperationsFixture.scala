@@ -46,7 +46,8 @@ private[material] object MaterialDeliveryOperationsFixture {
 
   /** Independent committed delivery-row reads precede every controlled provider write. */
   final class CheckpointPeer(database: Database, val delegate: MaterialRegistrationOperationsFixture.HttpPeer,
-    beforeGet: String => Unit = _ => (), afterGet: String => Unit = _ => ()) extends HttpDriver {
+    beforeGet: String => Unit = _ => (), afterGet: String => Unit = _ => (),
+    getOverride: String => Option[HttpResponse] = _ => None) extends HttpDriver {
     private var _observed = Vector.empty[Vector[Option[String]]]
     private var _documents = Vector.empty[Vector[Json]]
     def checkpoints: Vector[Vector[Json]] = _documents
@@ -58,7 +59,7 @@ private[material] object MaterialDeliveryOperationsFixture {
     def get(path: String, headers: Map[String, String], properties: Vector[Property]): HttpResponse = {
       _checkpoint()
       beforeGet(path)
-      val response = delegate.get(path, headers, properties)
+      val response = getOverride(path).getOrElse(delegate.get(path, headers, properties))
       afterGet(path)
       response
     }

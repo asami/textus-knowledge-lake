@@ -12,6 +12,7 @@ import scala.util.Using
  * @since Oct. 25, 2026
  * @version Nov.  6, 2026
  */
+@org.scalatest.tags.Slow
 final class MaterialDeliveryIntegrityOperationsSpec extends AnyWordSpec with Matchers with GivenWhenThen with MaterialRegistrationPostgresqlSpec {
   import MaterialRegistrationPersistenceFixture.*
   import MaterialDeliveryOperationsFixture.*
@@ -564,8 +565,8 @@ final class MaterialDeliveryIntegrityOperationsSpec extends AnyWordSpec with Mat
         Given("a reserved initiation that succeeds remotely but returns a controlled service failure")
         withDatabase(native_container) { database =>
           prepareDatabase(database)
-          // root POST, assets POST, parent GET, generated ID GET, initiation POST.
-          val peer = new HttpPeer(database, fault = Some(Fault(4, MaterialReferenceFixture.jsonResponse(Json.obj(), 503), after = true)))
+          // Each collection reserves through parent and ID GET before its POST; then direct initiation does the same.
+          val peer = new HttpPeer(database, fault = Some(Fault(8, MaterialReferenceFixture.jsonResponse(Json.obj(), 503), after = true)))
           withSession(database, parameters(Some(_config(true))), prepare = prepare()) { session =>
             val reference = _prepare(session, peer, _single).getString("deliveryRef").get
             When("preparation loses its acknowledgement and the owner retries the same command")

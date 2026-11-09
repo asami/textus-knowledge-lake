@@ -79,6 +79,12 @@
         "output" : "MaterialDeliverySnapshot"
       }, {
         "service" : "MaterialDelivery",
+        "name" : "reconcile",
+        "kind" : "COMMAND",
+        "input" : "MaterialDeliveryReconcileCommand",
+        "output" : "MaterialDeliverySnapshot"
+      }, {
+        "service" : "MaterialDelivery",
         "name" : "uploadOriginal",
         "kind" : "COMMAND",
         "input" : "MaterialDeliveryUploadCommand",
@@ -533,6 +539,20 @@
         "fields" : [ {
           "name" : "deliveryRef",
           "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialDeliveryReconcileCommand",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "deliveryRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "revision",
+          "type" : "long",
           "multiplicity" : "1",
           "required" : true
         } ]

@@ -30,6 +30,7 @@ import org.simplemodeling.textus.knowledgelake.{value => dto}
  * @since   Oct. 22, 2026
  * @version Oct. 22, 2026
  */
+@org.scalatest.tags.Slow
 final class MaterialRegistrationOperationsSpec extends AnyWordSpec with Matchers with GivenWhenThen
     with ConclusionMatchers with MaterialRegistrationPostgresqlSpec {
   import MaterialRegistrationPersistenceFixture.*

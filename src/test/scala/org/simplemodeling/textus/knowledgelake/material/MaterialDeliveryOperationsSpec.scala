@@ -13,6 +13,7 @@ import org.scalatest.wordspec.AnyWordSpec
  * @since   Oct. 25, 2026
  * @version Nov.  6, 2026
  */
+@org.scalatest.tags.Slow
 final class MaterialDeliveryOperationsSpec extends AnyWordSpec with Matchers with GivenWhenThen with MaterialRegistrationPostgresqlSpec {
   import MaterialRegistrationPersistenceFixture.*
   import MaterialDeliveryOperationsFixture.*
@@ -116,7 +117,7 @@ final class MaterialDeliveryOperationsSpec extends AnyWordSpec with Matchers wit
       withDatabase(native_container) { database =>
         prepareDatabase(database)
         val peer = new CheckpointPeer(database, new HttpPeer(database,
-          fault = Some(Fault(3, MaterialReferenceFixture.jsonResponse(Json.obj(), 503), after = true))))
+          fault = Some(Fault(7, MaterialReferenceFixture.jsonResponse(Json.obj(), 503), after = true))))
         withSession(database, parameters(), prepare = prepare()) { session =>
           val reference = record(session.query("prepare", fields, driver = Some(peer), service = "MaterialDelivery")).getString("deliveryRef").get
           When("the upload returns an uncertain failure and status is queried before another attempt")

@@ -33,6 +33,7 @@ lazy val root = project
     version := ProjectYamlBuild.version(projectIdentityEvidence.value, cozyProjectMetadata.value),
     scalaVersion := ProjectYamlBuild.requiredValue(cozyProjectMetadata.value, "build.scalaVersion"),
     useCoursier := false,
+    Test / test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "org.scalatest.tags.Slow"),
     esa63LiveRuntimeClasspath := {
       val output = target.value / "esa63-live-runtime.txt"
       IO.write(output, (javaHome.value.getOrElse(file(sys.props("java.home"))) / "bin" / "java").getAbsolutePath + "\n" +
