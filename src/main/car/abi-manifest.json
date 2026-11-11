@@ -3,7 +3,7 @@
   "component" : {
     "namespace" : "org.simplemodeling.textus",
     "id" : "KnowledgeLake",
-    "version" : "0.1.0-SNAPSHOT"
+    "version" : "0.1.1-SNAPSHOT"
   },
   "abi" : {
     "version" : 1,
@@ -14,6 +14,8 @@
       } ],
       "services" : [ {
         "name" : "Material"
+      }, {
+        "name" : "MaterialDelivery"
       } ],
       "operations" : [ {
         "service" : "Material",
@@ -51,6 +53,60 @@
         "kind" : "COMMAND",
         "input" : "MaterialRegistrationMaterializeCommand",
         "output" : "MaterialRegistrationResult"
+      }, {
+        "service" : "MaterialDelivery",
+        "name" : "getDestination",
+        "kind" : "QUERY",
+        "input" : "void",
+        "output" : "MaterialDeliveryDestination"
+      }, {
+        "service" : "MaterialDelivery",
+        "name" : "prepare",
+        "kind" : "COMMAND",
+        "input" : "MaterialDeliveryPrepareCommand",
+        "output" : "MaterialDeliverySnapshot"
+      }, {
+        "service" : "MaterialDelivery",
+        "name" : "findForRequest",
+        "kind" : "QUERY",
+        "input" : "MaterialDeliveryRequestQuery",
+        "output" : "MaterialDeliveryLookup"
+      }, {
+        "service" : "MaterialDelivery",
+        "name" : "get",
+        "kind" : "QUERY",
+        "input" : "MaterialDeliverySelectionQuery",
+        "output" : "MaterialDeliverySnapshot"
+      }, {
+        "service" : "MaterialDelivery",
+        "name" : "reconcile",
+        "kind" : "COMMAND",
+        "input" : "MaterialDeliveryReconcileCommand",
+        "output" : "MaterialDeliverySnapshot"
+      }, {
+        "service" : "MaterialDelivery",
+        "name" : "uploadOriginal",
+        "kind" : "COMMAND",
+        "input" : "MaterialDeliveryUploadCommand",
+        "output" : "MaterialDeliverySnapshot"
+      }, {
+        "service" : "MaterialDelivery",
+        "name" : "finalize",
+        "kind" : "COMMAND",
+        "input" : "MaterialDeliveryFinalizeCommand",
+        "output" : "MaterialDeliverySnapshot"
+      }, {
+        "service" : "MaterialDelivery",
+        "name" : "prepareOriginalTransfer",
+        "kind" : "COMMAND",
+        "input" : "MaterialDeliveryDirectPrepareCommand",
+        "output" : "MaterialDeliveryTransfer"
+      }, {
+        "service" : "MaterialDelivery",
+        "name" : "confirmOriginalTransfer",
+        "kind" : "COMMAND",
+        "input" : "MaterialDeliveryDirectConfirmCommand",
+        "output" : "MaterialDeliverySnapshot"
       } ],
       "types" : [ {
         "name" : "MaterialSearchResult",
@@ -295,6 +351,327 @@
         "fields" : [ {
           "name" : "registrationId",
           "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialDeliveryDestination",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "destinationId",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "label",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "availability",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "transferMethod",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "transferReason",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "maxResourceBytes",
+          "type" : "long",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "contentIntegrity",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        } ]
+      }, {
+        "name" : "MaterialDeliverySnapshot",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "deliveryRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "requestId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "revision",
+          "type" : "long",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "destinationId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "destinationLabel",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "transferMethod",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "transferReason",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "state",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "resources",
+          "type" : "MaterialDeliveryResourceProgress",
+          "multiplicity" : "*",
+          "required" : false
+        }, {
+          "name" : "materialRef",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "actionRequired",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        } ]
+      }, {
+        "name" : "MaterialDeliveryResourceProgress",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "resourceId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "mediaType",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "byteLength",
+          "type" : "long",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "state",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "contentDigest",
+          "type" : "json",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "verificationState",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "verificationAttempts",
+          "type" : "int",
+          "multiplicity" : "?",
+          "required" : false
+        }, {
+          "name" : "verificationReason",
+          "type" : "string",
+          "multiplicity" : "?",
+          "required" : false
+        } ]
+      }, {
+        "name" : "MaterialDeliveryLookup",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "found",
+          "type" : "boolean",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "delivery",
+          "type" : "MaterialDeliverySnapshot",
+          "multiplicity" : "?",
+          "required" : false
+        } ]
+      }, {
+        "name" : "MaterialDeliveryPrepareCommand",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "requestId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "contribution",
+          "type" : "json",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialDeliveryRequestQuery",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "requestId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialDeliverySelectionQuery",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "deliveryRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialDeliveryReconcileCommand",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "deliveryRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "revision",
+          "type" : "long",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialDeliveryUploadCommand",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "deliveryRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "resourceId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "content",
+          "type" : "blob",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialDeliveryFinalizeCommand",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "deliveryRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialDeliveryTransfer",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "delivery",
+          "type" : "MaterialDeliverySnapshot",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "instruction",
+          "type" : "MaterialOriginalTransferInstruction",
+          "multiplicity" : "?",
+          "required" : false
+        } ]
+      }, {
+        "name" : "MaterialOriginalTransferInstruction",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "transferRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "resourceId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "method",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "uploadSessionUri",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "mediaType",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "byteLength",
+          "type" : "long",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "nextOffset",
+          "type" : "long",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialDeliveryDirectPrepareCommand",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "deliveryRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "resourceId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        } ]
+      }, {
+        "name" : "MaterialDeliveryDirectConfirmCommand",
+        "kind" : "value",
+        "fields" : [ {
+          "name" : "deliveryRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "resourceId",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "transferRef",
+          "type" : "string",
+          "multiplicity" : "1",
+          "required" : true
+        }, {
+          "name" : "result",
+          "type" : "json",
           "multiplicity" : "1",
           "required" : true
         } ]

@@ -152,3 +152,27 @@ The Studio journal distinguishes controlled reference/browser and legacy
 compatibility results from real Google/App and private packaged CAR gates.
 Those operational observations do not supply missing real-account consent,
 configuration or packaging evidence.
+
+
+## Collection-write reconciliation
+
+`MaterialDelivery.reconcile` is an authenticated command taking exactly the opaque
+`deliveryRef` and current `revision`. It verifies the retained delivery owner and
+optimistic revision. Collection creation reserves an opaque native identity and
+durably retains its complete owner/operation/parent/name binding before submission.
+A confirmed observation may checkpoint that same identity. A retained native
+pre-dispatch refusal can release the checkpoint for a later explicit operation;
+unknown, possibly dispatched and missing observations remain blocked. An initial empty legacy root attempt may be released only by an exact, separately provisioned trusted host adjudication of the original pre-dispatch refusal; it records a private audit and performs no provider operation. All other legacy states remain blocked.
+Inspection reads only the reserved identity and does not create a resource.
+Provider identities and observations remain private; a display name or HTTP
+status alone is never proof of absence or identity. No provider create is replayed
+by reconciliation. Existing unfinished legacy checkpoints do not acquire a
+reservation retroactively.
+
+A reserved-ID confirmation identifies the retained resource only when the full
+provider binding matches. A 404, malformed or incomplete response, and any
+nonconfirming observation remain unknown: they do not establish zero resources.
+A display-name match, including one or several same-name children, cannot identify
+the attempted create. The operation performs no child-name scan to produce an
+apparent zero, one or ambiguous proof. A reservation interrupted before it is
+checkpointed also remains blocked; no new reservation is substituted on retry.

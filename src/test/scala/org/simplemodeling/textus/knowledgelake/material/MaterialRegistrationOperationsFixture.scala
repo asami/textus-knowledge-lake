@@ -19,7 +19,8 @@ import org.simplemodeling.textus.knowledgelake.KnowledgeLakeComponent
  * No real account, credentials or network is used by this fixture.
  *
  * @since   Oct. 22, 2026
- * @version Oct. 22, 2026
+ *  version Oct. 25, 2026
+ * @version Nov.  6, 2026
  */
 private[material] object MaterialRegistrationOperationsFixture {
   import MaterialRegistrationPersistenceFixture.{Database, PhysicalState, principal, foreign, lake, logicalParent, binding}
@@ -38,6 +39,13 @@ private[material] object MaterialRegistrationOperationsFixture {
   private val _redirect = s"http://127.0.0.1:8123/web/knowledge-lake/connections/$connectionId/callback"
   private val _folder_mime = "application/vnd.google-apps.folder"
 
+  def sha256(bytes: Vector[Byte]): String = java.security.MessageDigest.getInstance("SHA-256")
+    .digest(bytes.toArray).map(value => f"${value & 0xff}%02x").mkString
+  def integrityContribution: Json = contribution.mapObject(fields => fields.add("originals",
+    Json.fromValues(fields("originals").get.asArray.get.zip(pngs).map { case (original, bytes) =>
+      original.mapObject(_.add("contentDigest", Json.obj("algorithm" -> Json.fromString("sha256"),
+        "value" -> Json.fromString(sha256(bytes)))))
+    })))
   def replace(document: Json, key: String, value: Json): Json = document.mapObject(_.add(key, value))
   def configuration: Json = Json.obj(
     "schema" -> Json.fromString("textus.knowledge-lake.material-registration/1"), "id" -> Json.fromString(binding),
@@ -83,7 +91,7 @@ private[material] object MaterialRegistrationOperationsFixture {
   def selector(identity: String): Vector[(String, Any)] = Vector("registrationId" -> identity)
   def createFields(document: Json = contribution): Vector[(String, Any)] = Vector("contribution" -> document)
   def statUrl(key: String): String =
-    s"https://www.googleapis.com/drive/v3/files/$key?supportsAllDrives=true&fields=id,name,mimeType,size,parents,trashed,version"
+    s"https://www.googleapis.com/drive/v3/files/$key?supportsAllDrives=true&fields=id,name,mimeType,size,parents,trashed,version,sha256Checksum,driveId"
   def mediaUrl(key: String): String = s"https://www.googleapis.com/drive/v3/files/$key?alt=media&supportsAllDrives=true"
   def metadata(key: String, parent: String, label: String, media: String, length: Option[Long]): Json =
     Json.obj("id" -> Json.fromString(key), "name" -> Json.fromString(label), "mimeType" -> Json.fromString(media),
@@ -140,24 +148,68 @@ private[material] object MaterialRegistrationOperationsFixture {
   final case class Confirmed(key: String, parent: String, label: String, media: String, bytes: Vector[Byte], collection: Boolean) {
     override def toString: String = "RegistrationConfirmed(<test-owned>)"
   }
+  final case class MetadataFault(resourceId: String, check: Int, omitDigest: Boolean = false,
+    digest: Option[String] = None, identity: Option[String] = None, parent: Option[String] = None,
+    root: Option[Option[String]] = None, length: Option[Long] = None, media: Option[String] = None)
   final case class Fault(index: Int, response: HttpResponse, after: Boolean = false)
 
   /** Records actual request bytes and a fresh JDBC snapshot before every synthetic provider effect. */
   final class HttpPeer(database: Database, fault: Option[Fault] = None,
-    sourceStat: Option[Json] = None, sourceContent: Option[HttpResponse] = None) extends HttpDriver {
+    sourceStat: Option[Json] = None, sourceContent: Option[HttpResponse] = None,
+    storageRoot: Option[String] = None) extends HttpDriver {
     private var _effects = Vector.empty[Effect]
     private var _confirmed = Vector.empty[Confirmed]
     private var _pending = Map.empty[String, (String, String, String)]
     private var _serial = 0
+    private var _allocated = Set.empty[String]
+    private var _metadata_faults = Vector.empty[MetadataFault]
+    private var _metadata_checks = Map.empty[String, Int]
+    private val _storage_root = storageRoot
+    def setMetadataFaults(faults: Vector[MetadataFault]): Unit = { _metadata_faults = faults }
+    def metadataChecks(resourceId: String): Int = _metadata_checks.getOrElse(resourceId, 0)
+    private def _stored_metadata(file: Confirmed, independent: Boolean): Json = {
+      val check = if (independent) _metadata_checks.getOrElse(file.label, 0) + 1 else 0
+      if (independent) _metadata_checks += file.label -> check
+      val fault = _metadata_faults.find(value => value.resourceId == file.label && value.check == check)
+      val base = metadata(fault.flatMap(_.identity).getOrElse(file.key), fault.flatMap(_.parent).getOrElse(file.parent),
+        file.label, fault.flatMap(_.media).getOrElse(file.media),
+        if (file.collection) None else Some(fault.flatMap(_.length).getOrElse(file.bytes.size.toLong)))
+      val root = fault.flatMap(_.root).getOrElse(_storage_root)
+      val rooted = root.fold(base)(value => replace(base, "driveId", Json.fromString(value)))
+      if (file.collection || fault.exists(_.omitDigest)) rooted
+      else {
+        val digest = fault.flatMap(_.digest).getOrElse(sha256(file.bytes))
+        replace(rooted, "sha256Checksum", Json.fromString(digest))
+      }
+    }
+    private var _mobile_uploads = Vector.empty[String]
     private val _fault = fault
     private val _source_stat = sourceStat
     private val _source_content = sourceContent
     def effects: Vector[Effect] = _effects
     def confirmed: Vector[Confirmed] = _confirmed
+    def mobileUploads: Vector[String] = _mobile_uploads
+    def uploadFromMobile(session: String, content: Vector[Byte]): HttpResponse = {
+      _mobile_uploads :+= session
+      _finish_upload(session, content)
+    }
     def releaseObservations(): Unit = { _effects = _effects.map(_.copy(before = PhysicalState(Vector.empty, Vector.empty))) }
 
     def get(path: String, headers: Map[String, String], properties: Vector[Property]): HttpResponse = {
+      if (path == "https://www.googleapis.com/drive/v3/files/generateIds?count=1&space=drive&type=files") {
+        return _effect("GET", path, headers, None, Vector.empty) {
+          _serial += 1
+          val id = "ReservedResource_" + _serial
+          _allocated += id
+          MaterialReferenceFixture.jsonResponse(Json.obj("ids" -> Json.arr(Json.fromString(id)),
+            "space" -> Json.fromString("drive"), "kind" -> Json.fromString("drive#generatedIds")))
+        }
+      }
       val key = new URI(path).getPath.split('/').last
+      if (key == destinationParent && path == statUrl(key)) return _effect("GET", path, headers, None, Vector.empty) {
+        val value = metadata(key, "SelectedProviderParent", "destination", _folder_mime, None)
+        MaterialReferenceFixture.jsonResponse(_storage_root.fold(value)(root => replace(value, "driveId", Json.fromString(root))))
+      }
       val media = path == mediaUrl(key)
       val bytes = sources.get(key).orElse(_confirmed.find(_.key == key).map(_.bytes))
         .getOrElse(throw new AssertionError("Unexpected source or persisted key"))
@@ -169,8 +221,7 @@ private[material] object MaterialRegistrationOperationsFixture {
         } else {
           val file = _confirmed.find(_.key == key).get
           if (media) MaterialReferenceFixture.mediaResponse(mediaType = file.media, content = file.bytes)
-          else if (path == statUrl(key)) MaterialReferenceFixture.jsonResponse(
-            metadata(key, file.parent, file.label, file.media, Some(file.bytes.size.toLong)))
+          else if (path == statUrl(key)) MaterialReferenceFixture.jsonResponse(_stored_metadata(file, true))
           else throw new AssertionError("Unexpected stored GET")
         }
       }
@@ -183,11 +234,16 @@ private[material] object MaterialRegistrationOperationsFixture {
         val parent = fields("parents").flatMap(_.asArray).get.head.asString.get
         val media = fields("mimeType").flatMap(_.asString).get
         _serial += 1
-        val key = "ConfirmedResource_" + _serial
-        if (path.startsWith("https://www.googleapis.com/drive/v3/files?") && media == _folder_mime) {
-          _confirmed :+= Confirmed(key, parent, label, media, Vector.empty, true)
-          MaterialReferenceFixture.jsonResponse(metadata(key, parent, label, media, None), 201)
+        val selected = fields("id").flatMap(_.asString)
+        val key = selected.getOrElse("ConfirmedResource_" + _serial)
+        if (selected.exists(value => !_allocated.contains(value) || _confirmed.exists(_.key == value) ||
+          _pending.keys.exists(_.endsWith("upload_id=" + value)))) MaterialReferenceFixture.jsonResponse(Json.obj(), 409)
+        else if (path.startsWith("https://www.googleapis.com/drive/v3/files?") && media == _folder_mime) {
+          val file = Confirmed(key, parent, label, media, Vector.empty, true)
+          _confirmed :+= file
+          MaterialReferenceFixture.jsonResponse(_stored_metadata(file, false), 201)
         } else if (path.startsWith("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&")) {
+          _allocated -= key
           val location = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=" + key
           _pending += location -> ((parent, label, media))
           MaterialReferenceFixture.jsonResponse(Json.obj()).withHeader(Record.data("Location" -> location))
@@ -200,12 +256,21 @@ private[material] object MaterialRegistrationOperationsFixture {
       properties: Vector[Property]): HttpResponse = {
       val bytes = Using.resource(body.get.openInputStream())(_.readAllBytes().toVector)
       _effect("PUT", path, headers, None, bytes) {
-        val (parent, label, media) = _pending.getOrElse(path, throw new AssertionError("Unknown upload session"))
-        val key = path.split("upload_id=", 2).last
-        _pending -= path
-        _confirmed :+= Confirmed(key, parent, label, media, bytes, false)
-        MaterialReferenceFixture.jsonResponse(metadata(key, parent, label, media, Some(bytes.size.toLong)), 201)
+        if (headers.get("Content-Range").exists(_.startsWith("bytes */"))) {
+          if (_pending.contains(path)) MaterialReferenceFixture.jsonResponse(Json.obj(), 308)
+          else _confirmed.find(_.key == path.split("upload_id=", 2).last).fold(
+            MaterialReferenceFixture.jsonResponse(Json.obj(), 404))(value =>
+            MaterialReferenceFixture.jsonResponse(_stored_metadata(value, false)))
+        } else _finish_upload(path, bytes)
       }
+    }
+    private def _finish_upload(session: String, content: Vector[Byte]): HttpResponse = {
+      val (parent, label, media) = _pending.getOrElse(session, throw new AssertionError("Unknown upload session"))
+      val key = session.split("upload_id=", 2).last
+      _pending -= session
+      val file = Confirmed(key, parent, label, media, content, false)
+      _confirmed :+= file
+      MaterialReferenceFixture.jsonResponse(_stored_metadata(file, false), 201)
     }
     private def _effect(method: String, path: String, headers: Map[String, String], document: Option[Json],
       bytes: Vector[Byte])(response: => HttpResponse): HttpResponse = {

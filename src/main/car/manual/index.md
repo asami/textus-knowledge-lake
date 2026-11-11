@@ -1,7 +1,7 @@
 # Knowledge Lake reference manual
 
 Component: `org.simplemodeling.textus.KnowledgeLake`\
-Version: `0.1.0-SNAPSHOT`
+Version: `0.1.1-SNAPSHOT`
 
 See the [user guide](user-guide.md),
 Material reference v1 (`docs/spec/material-reference-v1.md`) and
@@ -176,3 +176,37 @@ Reads start no registration, preparation or OpenClaw workflow and create no
 Candidate. A provider receipt is neither native registration nor human approval.
 Owning public registration authoring does not establish composed Studio activation,
 real Google/App evidence, packaged-runtime acceptance or whole Stage acceptance.
+
+## Opt-in participant access
+
+The server-owned `material.participant.configuration` profile pins the actual
+cohost authentication provider and requires an access-session Bearer route.
+Existing destination and native Material owner policies still apply. See
+`docs/spec/participant-material-access-v1.md` in the source checkout for the
+nonsecret operator template and public delivery methods. That source document
+is not a packaged manual link. No deployed URL, Google provisioning or consumer
+activation is implied by this manual.
+
+
+## Collection-write reconciliation
+
+`MaterialDelivery.reconcile` is an authenticated command taking exactly the opaque
+`deliveryRef` and current `revision`. It verifies the retained delivery owner and
+optimistic revision. Collection creation reserves an opaque native identity and
+durably retains its complete owner/operation/parent/name binding before submission.
+A confirmed observation may checkpoint that same identity. A retained native
+pre-dispatch refusal can release the checkpoint for a later explicit operation;
+unknown, possibly dispatched and missing observations remain blocked. An initial empty legacy root attempt may be released only by an exact, separately provisioned trusted host adjudication of the original pre-dispatch refusal; it records a private audit and performs no provider operation. All other legacy states remain blocked.
+Inspection reads only the reserved identity and does not create a resource.
+Provider identities and observations remain private; a display name or HTTP
+status alone is never proof of absence or identity. No provider create is replayed
+by reconciliation. Existing unfinished legacy checkpoints do not acquire a
+reservation retroactively.
+
+A reserved-ID confirmation identifies the retained resource only when the full
+provider binding matches. A 404, malformed or incomplete response, and any
+nonconfirming observation remain unknown: they do not establish zero resources.
+A display-name match, including one or several same-name children, cannot identify
+the attempted create. The operation performs no child-name scan to produce an
+apparent zero, one or ambiguous proof. A reservation interrupted before it is
+checkpointed also remains blocked; no new reservation is substituted on retry.

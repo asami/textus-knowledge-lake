@@ -20,7 +20,8 @@ import org.simplemodeling.model.datatype.EntityId
 
 /*
  * @since   Oct. 21, 2026
- * @version Oct. 28, 2026
+ *  version Oct. 28, 2026
+ * @version Nov.  6, 2026
  */
 private[knowledgelake] final class MaterialServiceFactory extends KnowledgeLakeComponent.MaterialServiceFactory {
   import KnowledgeLakeComponent.MaterialService.*
@@ -103,14 +104,16 @@ private[knowledgelake] object MaterialServiceFactory {
     } yield _registration_result(snapshot)
   }
 
-  private def _mode(core: ActionCall.Core): Consequence[MaterialReferenceRuntime.Mode] = {
+  private def _mode(core: ActionCall.Core): Consequence[MaterialReferenceRuntime.Mode] =
+    MaterialParticipantAdmission.forComponentC(core.component, core.executionContext.security).flatMap { _ =>
     val subject = SecuritySubject.from(core.executionContext.security)
     if (!subject.isProviderAuthenticated) Consequence.securityPermissionDenied("Material caller authentication is required")
     else core.component.collect { case runtime: MaterialReferenceRuntime => runtime }
       .fold[Consequence[MaterialReferenceRuntime.Mode]](Consequence.serviceUnavailable("Material reference runtime is unavailable"))(
         runtime => Consequence.success(runtime._material_reference_mode))
   }
-  private def _catalog(core: ActionCall.Core): Consequence[(String, MaterialCatalog)] = {
+  private def _catalog(core: ActionCall.Core): Consequence[(String, MaterialCatalog)] =
+    MaterialParticipantAdmission.forComponentC(core.component, core.executionContext.security).flatMap { _ =>
     val subject = SecuritySubject.from(core.executionContext.security)
     if (!subject.isProviderAuthenticated) Consequence.securityPermissionDenied("Material caller authentication is required")
     else core.component.collect { case runtime: MaterialReferenceRuntime => runtime }.flatMap(_.materialCatalog)

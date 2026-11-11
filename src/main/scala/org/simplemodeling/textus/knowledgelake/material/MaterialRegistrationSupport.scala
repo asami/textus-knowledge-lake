@@ -16,7 +16,7 @@ import org.simplemodeling.model.datatype.EntityId
  * source binding and TKL-managed grant before supplying a source capability.
  *
  * @since   Oct. 21, 2026
- * @version Oct. 21, 2026
+ * @version Nov.  6, 2026
  */
 private[knowledgelake] trait MaterialRegistrationSupport extends FunctionalActionCall {
   /** Internal owner-registration view; ordinary native read authorization filters results before paging. */
@@ -93,7 +93,8 @@ private[knowledgelake] trait MaterialRegistrationSupport extends FunctionalActio
     } yield registered
   }
 
-  private def _authenticated_principal(): Consequence[PrincipalId] = {
+  private def _authenticated_principal(): Consequence[PrincipalId] = MaterialParticipantAdmission.forComponentC(
+    core.component, execution_context.security).flatMap { _ =>
     val subject = SecuritySubject.from(execution_context.security)
     if (subject.isProviderAuthenticated) Consequence.success(PrincipalId(subject.subjectId))
     else Consequence.securityAuthenticationRequired("Material registration requires provider authentication")

@@ -1,6 +1,14 @@
 # TKL-managed mobile Material delivery
 
-Decision: 2026-10-24. Status: agreed specification; implementation pending.
+Decision: 2026-10-24; clarified 2026-10-25. Status: implementation in progress;
+live acceptance pending.
+
+The selected [mobile delivery v1 contract](mobile-material-delivery-v1.md)
+binds additive Operation names, client values and native implementation
+requirements for ESA63-01. Its CML contracts now generate/compile and native input admission passes focused
+specifications. The native delivery runtime now supplies durable mediated
+transfer/registration and direct-provider preparation/confirmation. Deployed
+ingress and live provider acceptance remain pending.
 
 ## Authority and supported destinations
 
@@ -43,7 +51,9 @@ These are semantic capabilities, not final operation names or wire DTOs.
 2. Prepare delivery for a committed Material, its metadata and declared resources.
    TKL returns a delivery reference and the required transfer instructions.
 3. Core transfers resources through TKL or directly to the provider using those
-   instructions. Direct Drive upload is a physical optimization, not permission
+   instructions. Prefer direct transfer when the selected provider exposes its
+   optional preparation/status capability; otherwise explicitly select transfer
+   through TKL and retain the capability reason. Direct Drive upload is not permission
    for the client to construct Lake locations.
 4. Report transfer results and finalize registration through TKL. TKL returns
    the Material reference/URN and the actual registration outcome.
@@ -54,6 +64,26 @@ Uploading photo/audio bytes alone is not registration of a complete Material.
 The contract must include committed metadata, resource associations and provenance.
 TKL registration and any subsequent Editing Studio server acknowledgement remain
 separate facts. Neither implies Candidate formation or Information admission.
+
+Permission refusal, network failure and unknown effects are failures/recovery
+states, not evidence that the provider lacks direct capability. They never
+silently change the retained transfer method. The authorized client receives
+only narrow per-original transfer instructions; TKL independently checks actual
+provider completion before accepting that original.
+
+## Test configuration and production discovery
+
+The user explicitly permits configuration for testing (2026-10-24). The test
+host may select the native service connection, provider configuration and
+dedicated destination; client test composition may inject configured contract
+responses. Keep fixtures distinguishable from real native/provider results.
+Configuration alone proves neither Google access nor Material registration.
+
+In production, TKL supplies the permitted integration information through its
+public discovery/preparation contract. Client bootstrap may identify the service
+and application authentication context, but it is not a second source of
+storage policy. TKL failure must not activate a test destination. Server-side
+Google credentials and physical mappings remain on the server.
 
 ## Configuration, authorization and recovery
 
@@ -95,17 +125,6 @@ destination. Permissions revoked or a folder removed produce actionable failure.
 
 Plan: [mobile delivery workstream](../phase/tkl-managed-mobile-material-delivery-plan.md).
 Parent contract: [Material access and processing](material-access-and-processing.md).
-
-
-## Planned content-integrity extension
-
-The [direct-upload integrity plan](https://github.com/KnowledgeHubProject/nict-editing-studio-app/blob/main/docs/notes/direct-upload-integrity-plan.md) adds
-server-service-account Shared Drive new-file reservations and SHA-256
-verification before registration to the existing route. This is an explicitly
-authorized content-integrity use, not a management-hash ledger. Existing
-metadata/length-only confirmation does not establish this new acceptance.
-Status remains planned for this delta; preserve prior evidence and active work.
-
 ## Untrusted-client admission and access — 2026-11-02
 
 The [UC-01..04 acceptance profile](https://github.com/asami/goldenport-cncf/blob/main/docs/spec/untrusted-client-material-acceptance.md)
@@ -168,3 +187,44 @@ applies in every mode. Fixture provider results are test evidence only.
 Destination/account changes preserve reservation ownership and do not replay
 pending transfers elsewhere. Synthetic reset cannot delete participant originals;
 post-event handling follows the declared Material retention/sharing policy.
+
+
+## Collection-write reconciliation
+
+`MaterialDelivery.reconcile` is an authenticated command taking exactly the opaque
+`deliveryRef` and current `revision`. It verifies the retained delivery owner and
+optimistic revision. Collection creation reserves an opaque native identity and
+durably retains its complete owner/operation/parent/name binding before submission.
+A confirmed observation may checkpoint that same identity. A retained native
+pre-dispatch refusal can release the checkpoint for a later explicit operation;
+unknown, possibly dispatched and missing observations remain blocked except for the narrowly adjudicated legacy case below.
+Inspection reads only the reserved identity and does not create a resource.
+Provider identities and observations remain private; a display name or HTTP
+status alone is never proof of absence or identity. No provider create is replayed
+by reconciliation. Existing unfinished legacy checkpoints do not acquire a
+reservation retroactively.
+
+For the initial legacy `collection:root` busy state with no reservation or prior
+placement, an optional trusted host decision can authorize the existing owner to
+reconcile exactly one delivery, request, revision, complete contribution and current
+destination configuration. The decision records an operator's adjudication of the
+original refusal before dispatch, with a source reference; it is not a native
+observation. An absent, invalid or mismatched decision blocks. The local CAS clears
+only the busy marker and stores a private audit of the decision and previous state;
+no provider access or registration occurs. Stored audit data cannot grant authority.
+The host must independently review original evidence before provisioning a decision.
+The optional component parameter `material.delivery.legacy-recovery-decision` is a
+JSON object with exactly `schema` (`textus.material-delivery-legacy-decision/1`),
+`adjudication` (`hostAdjudicatedOriginalRefusalBeforeDispatch`), `owner`, `delivery`,
+`request`, `revision`, the entire `contribution` with each original SHA-256 digest, the entire trusted `configuration`,
+and a nonempty `source` reference. It is host initialization data, never an HTTP
+parameter or part of the saved provider configuration. Invalid configuration fails
+initialization; absence denies this continuation.
+
+A reserved-ID confirmation identifies the retained resource only when the full
+provider binding matches. A 404, malformed or incomplete response, and any
+nonconfirming observation remain unknown: they do not establish zero resources.
+A display-name match, including one or several same-name children, cannot identify
+the attempted create. The operation performs no child-name scan to produce an
+apparent zero, one or ambiguous proof. A reservation interrupted before it is
+checkpointed also remains blocked; no new reservation is substituted on retry.
