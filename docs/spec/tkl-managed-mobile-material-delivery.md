@@ -154,3 +154,17 @@ External key custody/offline media require explicit provider/equipment support;
 they are not properties of the current online Drive route or standard-use gates.
 Standard deployment documentation identifies operator sharing/backup/restore
 duties and actual qualification rather than implying configuration is evidence.
+
+## Runtime profile isolation — 2026-11-02
+
+Apply [shared mode defaults](https://github.com/asami/goldenport-cncf/blob/main/docs/spec/runtime-mode-security-defaults.md) through trusted common configuration.
+Dev/test use isolated synthetic owners, storage and provider adapters.
+Participant demo uses private demo storage and real owner authorization;
+production uses its qualified real bindings. Clients never choose provider
+credentials or weaken registration checks by sending a mode value.
+
+The same reservation, authoritative verification and Material-admission contract
+applies in every mode. Fixture provider results are test evidence only.
+Destination/account changes preserve reservation ownership and do not replay
+pending transfers elsewhere. Synthetic reset cannot delete participant originals;
+post-event handling follows the declared Material retention/sharing policy.

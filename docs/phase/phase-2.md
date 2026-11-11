@@ -146,3 +146,24 @@ gaps; these conditions do not make EAI a prerequisite for App 6.10/7.
 
 This qualifies migrated routes with existing evidence, not a new general
 security-configuration implementation or offline-storage dependency.
+
+## BMFT workbook allocation — 2026-11-08
+
+[BMFT connected plan](https://github.com/KnowledgeHubProject/bok-knowledgehub/blob/main/docs/phase/bmft-excel-material-information-plan.md) adds concrete input and consumer acceptance
+to TKL2-01/02/05. This allocation preserves the existing OPEN checklist and
+mobile delivery priorities; BMFT-02 does not require the whole EAI migration.
+
+- TKL2-01/02 bind one original BMFT attachment workbook to one authorized Material,
+  retaining exact original bytes, message/attachment provenance and actual resource
+  source version. Separate revised receipts from retry of the same registration;
+  never silently replace an admitted original or downstream approved Information.
+- TKL2-02/05 provide ordinary authorized discovery/read to Workbench and Studio,
+  including the actual identity/version needed to trace sheet/row/cell selection.
+  Studio owns BMFT workbook column/bibliography interpretation and normalization;
+  Workbench consumes generic items for Candidate creation. TKL retains raw received
+  Excel bytes, never a normalized replacement, and supplies source identity/version.
+  TKL does not interpret keywords/translations or review/approve Information.
+  Verify the original remains byte-identical after downstream conversion/edit/admission.
+- A genuinely pre-registered BMFT Material can support downstream Web development
+  and demonstration while live EAI mail acceptance remains visibly outstanding.
+  Such a start does not close TKL2-02's real mail ingestion criterion.

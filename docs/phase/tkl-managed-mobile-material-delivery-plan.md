@@ -86,3 +86,16 @@ review loops or a reopening of completed historical scopes.
 
 Contract: [standard storage policy](../spec/tkl-managed-mobile-material-delivery.md#standard-storage-and-configurable-policy--2026-11-02).
 Reuse current acceptance; no new offline-media/HSM prerequisite.
+
+## Runtime-profile acceptance — 2026-11-02
+
+Within TKL-D01..03, apply [profile isolation](../spec/tkl-managed-mobile-material-delivery.md#runtime-profile-isolation--2026-11-02).
+
+- [ ] MODE-02..05: qualify real participant demo preparation/finalization and
+  source access with distinct users and private destination; no client-selected
+  mode, fake completion or provider credential widens access.
+- [ ] Preserve account/destination bindings on retry and environment changes;
+  synthetic provider/reset paths cannot touch real participant originals.
+
+Reuse existing UC/SB/direct-upload evidence. This bounded November demo work
+does not wait for EAI Phase 2 and does not reopen completed historical scopes.
