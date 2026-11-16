@@ -1,5 +1,13 @@
 # Phase 2: EAI-Mediated Material Ingestion
 
+## Commons release boundary — 2026-11-15
+
+The December 11 milestone is a team-restricted read-only Web application over knowledge extracted and reviewed privately from eligible 2026 mail.
+The [owner delivery plan](commons-demo-delivery-plan.md) defines the selected pre-release work and later extensions.
+Participant update/approval screens, the complete S1 update pipeline and new integration of both knowledge sources are outside the initial release.
+Use private properties and storage for real configuration, originals, personal information and secrets.
+Existing numbered Phase/checklist states and independent work remain unchanged. Additional Studio development/new integration remains on hold; Commons can consume shared contracts without requiring it.
+
 status=planned
 planned_at=2026-11-02
 owner=textus-knowledge-lake

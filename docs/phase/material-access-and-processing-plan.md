@@ -1,5 +1,13 @@
 # Material access and OpenClaw processing delivery plan
 
+## Commons release boundary — 2026-11-15
+
+The December 11 milestone is a team-restricted read-only Web application over knowledge extracted and reviewed privately from eligible 2026 mail.
+The [owner delivery plan](commons-demo-delivery-plan.md) defines the selected pre-release work and later extensions.
+Participant update/approval screens, the complete S1 update pipeline and new integration of both knowledge sources are outside the initial release.
+Use private properties and storage for real configuration, originals, personal information and secrets.
+Existing numbered Phase/checklist states and independent work remain unchanged. Additional Studio development/new integration remains on hold; Commons can consume shared contracts without requiring it.
+
 status=planned
 planned_at=2026-10-21
 owner=textus-knowledge-lake
@@ -57,3 +65,9 @@ registration, live account, acceptance record or Goal state.
 ## EAI integration follow-up (2026-11-02)
 
 See [TKL–EAI ingestion development proposal](../journal/2026-11-02-eai-ingestion-development-proposal.md). This is a journal proposal only; existing Phase acceptance and closure remain unchanged.
+
+## Commons owner workstream — 2026-11-15
+
+The [bounded owner plan](commons-demo-delivery-plan.md) defines CD-TKL tasks, dependencies, target dates and acceptance for the December 11 team-restricted reference Web.
+The [Commons register](../../../../Project2026/nict-knowledgehub-commons/docs/strategy/related-project-tracking.md) tracks cross-project handoffs. Workbench owns Information lifecycle, CNCF physical persistence and the NICT foundation common application composition; existing Hub API placement is bound explicitly before changes.
+This workstream is planned and unstarted. Existing numbered Phase states, checkboxes, active work and Studio hold remain unchanged.
