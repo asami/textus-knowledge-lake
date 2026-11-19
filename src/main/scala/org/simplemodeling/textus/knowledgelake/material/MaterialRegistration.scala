@@ -10,7 +10,8 @@ import org.goldenport.observation.Descriptor
  * Immutable native lifecycle document; physical receipts confer no authority.
  *
  * @since   Oct. 21, 2026
- * @version Oct. 21, 2026
+ *  version Oct. 21, 2026
+ * @version Nov. 12, 2026
  */
 private[knowledgelake] final class MaterialRegistrationDocument private (
   val contribution: MaterialContribution,
@@ -19,7 +20,8 @@ private[knowledgelake] final class MaterialRegistrationDocument private (
   val owner: PrincipalId,
   val createdBy: PrincipalId,
   val status: MaterialRegistrationDocument.Status,
-  val stored: Option[MaterialRegistrationDocument.Stored]
+  val stored: Option[MaterialRegistrationDocument.Stored],
+  val references: Option[Vector[MaterialReferencedOriginal]]
 ) {
   import MaterialRegistrationDocument.*
   def json: Json = Json.fromFields(Vector(
@@ -27,11 +29,12 @@ private[knowledgelake] final class MaterialRegistrationDocument private (
     "contribution" -> contribution.json, "lake" -> Json.fromString(location.lake),
     "logicalPath" -> Json.fromString(location.logicalPath), "storageBinding" -> Json.fromString(storageBinding),
     "owner" -> Json.fromString(owner.value), "createdBy" -> Json.fromString(createdBy.value),
-    "status" -> Json.fromString(status.value)) ++ stored.map(value => "stored" -> value.json))
+    "status" -> Json.fromString(status.value)) ++ stored.map(value => "stored" -> value.json) ++
+    references.map(value => "references" -> Json.fromValues(value.map(_.json))))
 
   def beginC: Consequence[MaterialRegistrationDocument] =
     if (status == Status.Prepared) Consequence.success(new MaterialRegistrationDocument(
-      contribution, location, storageBinding, owner, createdBy, Status.Materializing, None))
+      contribution, location, storageBinding, owner, createdBy, Status.Materializing, None, None))
     else Consequence.operationConflict("materializeMaterial", Vector(Descriptor.Facet.Reason("registration-not-prepared")))
 
   def completeC(receipt: StoredMaterialPackage): Consequence[MaterialRegistrationDocument] = {
@@ -46,10 +49,21 @@ private[knowledgelake] final class MaterialRegistrationDocument private (
         mapping <- Stored._parse(actual._root, actual._manifest,
           actual._files.map(value => new File(value.path, value._reference, value._parent)), expected)
       } yield new MaterialRegistrationDocument(contribution, location, storageBinding, owner, createdBy,
-        Status.Registered, Some(mapping))
+        Status.Registered, Some(mapping), None)
       admitted.fold[Consequence[MaterialRegistrationDocument]](
         Consequence.resourceInvalid("Invalid Material registration storage receipt"))(Consequence.success)
     }
+  }
+  def completeReferencesC(values: Vector[MaterialReferencedOriginal]): Consequence[MaterialRegistrationDocument] = {
+    val valid = Option(values).exists(items => items.map(_.resourceId) == contribution.originals.map(_.resourceId) &&
+      items.zip(contribution.originals).forall { case (item, original) =>
+        MaterialReferenceStorage.matches(original, MaterialReferenceBinding(item.bindingId, item.workspace, item.path)) &&
+          item.baseline.byteLength == original.byteLength
+      })
+    if (status == Status.Materializing && valid)
+      Consequence.success(new MaterialRegistrationDocument(contribution, location, storageBinding, owner, createdBy,
+        Status.Registered, None, Some(values)))
+    else Consequence.resourceInvalid("Invalid referenced Material registration receipt")
   }
   override def toString: String = "MaterialRegistrationDocument(<redacted>)"
 }
@@ -94,7 +108,7 @@ private[knowledgelake] object MaterialRegistrationDocument {
     if (Option(storageBinding).exists(_.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,127}")) &&
       MaterialPackage.planC(contribution, location, owner, createdBy).isSuccess)
       Consequence.success(new MaterialRegistrationDocument(contribution, location, storageBinding,
-        owner, createdBy, Status.Prepared, None))
+        owner, createdBy, Status.Prepared, None, None))
     else Consequence.argumentInvalid(_error)
   }
 
@@ -103,7 +117,9 @@ private[knowledgelake] object MaterialRegistrationDocument {
       fields <- Option(json).flatMap(_.asObject)
       statusvalue <- fields("status").flatMap(_.asString)
       status <- Status.values.find(_.value == statusvalue)
-      _ <- Option.when(fields.keys.toSet == (_keys ++ Option.when(status == Status.Registered)("stored")))(())
+      _ <- Option.when(if (status == Status.Registered)
+        fields.keys.toSet == (_keys + "stored") || fields.keys.toSet == (_keys + "references")
+        else fields.keys.toSet == _keys)(())
       _ <- fields("schema").filter(_ == Json.fromString("textus.material-registration/1"))
       contribution <- fields("contribution").flatMap(value => MaterialContribution.parseC(value).toOption)
       lake <- fields("lake").flatMap(_.asString)
@@ -113,7 +129,7 @@ private[knowledgelake] object MaterialRegistrationDocument {
       owner <- fields("owner").flatMap(_.asString)
       creator <- fields("createdBy").flatMap(_.asString)
       prepared <- preparedC(contribution, location, binding, PrincipalId(owner), PrincipalId(creator)).toOption
-      mapping <- if (status == Status.Registered) for {
+      mapping <- if (status == Status.Registered && fields.contains("stored")) for {
         value <- fields("stored").flatMap(_.asObject).filter(_.keys.toSet == Set("root", "manifest", "files"))
         root <- value("root").flatMap(_parse_reference)
         manifest <- value("manifest").flatMap(_parse_reference)
@@ -127,7 +143,16 @@ private[knowledgelake] object MaterialRegistrationDocument {
         plan <- MaterialPackage.planC(contribution, location, prepared.owner, prepared.createdBy).toOption
         stored <- Stored._parse(root, manifest, files, plan)
       } yield Some(stored) else Some(None)
-    } yield new MaterialRegistrationDocument(contribution, location, binding, prepared.owner, prepared.createdBy, status, mapping)
+      references <- if (status == Status.Registered && fields.contains("references")) for {
+        entries <- fields("references").flatMap(_.asArray)
+        values <- MaterialContribution._sequence(entries.map(MaterialReferencedOriginal.parse))
+        _ <- Option.when(values.map(_.resourceId) == contribution.originals.map(_.resourceId) &&
+          values.zip(contribution.originals).forall { case (item, original) =>
+            MaterialReferenceStorage.matches(original, MaterialReferenceBinding(item.bindingId, item.workspace, item.path)) &&
+              item.baseline.byteLength == original.byteLength
+          })(())
+      } yield Some(values) else Some(None)
+    } yield new MaterialRegistrationDocument(contribution, location, binding, prepared.owner, prepared.createdBy, status, mapping, references)
     admitted.fold[Consequence[MaterialRegistrationDocument]](Consequence.argumentInvalid(_error))(Consequence.success)
   }
 

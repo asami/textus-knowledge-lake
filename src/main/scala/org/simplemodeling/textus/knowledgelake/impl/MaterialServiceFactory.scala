@@ -3,12 +3,13 @@ package org.simplemodeling.textus.knowledgelake.impl
 import cats.syntax.all.*
 import java.util.Locale
 import org.goldenport.{Consequence, ConsequenceT}
-import org.goldenport.bag.BinaryBag
+import org.goldenport.bag.{Bag, BagBackend, BinaryBag}
 import org.goldenport.cncf.action.ActionCall
 import org.goldenport.cncf.entity.EntitySnapshot
 import org.goldenport.cncf.filestore.{FileStoreKind, FileStoreRef, GoogleDriveCredentials, GoogleDriveFileStore, GoogleDriveConnectionRuntime}
 import org.goldenport.cncf.security.SecuritySubject
 import org.goldenport.cncf.unitofwork.ExecUowM
+import org.goldenport.cncf.workspace.{FileObservedReadResult, FileSourceStability}
 import org.goldenport.datatype.{ContentType, MimeType}
 import org.goldenport.http.{HttpResponse, HttpStatus}
 import org.goldenport.protocol.operation.OperationResponse
@@ -21,7 +22,8 @@ import org.simplemodeling.model.datatype.EntityId
 /*
  * @since   Oct. 21, 2026
  *  version Oct. 28, 2026
- * @version Nov.  6, 2026
+ *  version Nov.  6, 2026
+ * @version Nov. 12, 2026
  */
 private[knowledgelake] final class MaterialServiceFactory extends KnowledgeLakeComponent.MaterialServiceFactory {
   import KnowledgeLakeComponent.MaterialService.*
@@ -52,6 +54,12 @@ private[knowledgelake] object MaterialServiceFactory {
     core.component.collect { case runtime: MaterialRegistrationRuntime => runtime }
       .flatMap(_._material_registration_configuration).fold[Consequence[MaterialRegistrationConfiguration]](
         Consequence.serviceUnavailable("Material registration is unavailable"))(Consequence.success)
+  private def _local_configuration(core: ActionCall.Core): Option[MaterialReferenceStorage] =
+    core.component.collect { case runtime: MaterialRegistrationRuntime => runtime }
+      .flatMap(_._material_local_reference_configuration)
+  private def _local_subject(core: ActionCall.Core, configuration: MaterialReferenceStorage): Consequence[Unit] =
+    if (configuration.allowedSubjects.contains(SecuritySubject.from(core.executionContext.security).subjectId)) Consequence.unit
+    else Consequence.securityPermissionDenied("Material registration caller is not admitted")
   private def _registration_subject(core: ActionCall.Core, configuration: MaterialRegistrationConfiguration): Consequence[Unit] =
     if (configuration.allowedsubjects.contains(SecuritySubject.from(core.executionContext.security).subjectId)) Consequence.unit
     else Consequence.securityPermissionDenied("Material registration caller is not admitted")
@@ -63,11 +71,21 @@ private[knowledgelake] object MaterialServiceFactory {
       extends CreateMaterialRegistrationActionCall with MaterialRegistrationSupport {
     protected def build_Program: ExecUowM[OperationResponse] = for {
       _ <- exec_from(_registration_mode(core))
-      configuration <- exec_from(_registration_configuration(core))
-      _ <- exec_from(_registration_subject(core, configuration))
-      contribution <- exec_from(MaterialContribution.parseC(action.contribution))
-      _ <- exec_from(MaterialRegistrationSource._admit(contribution, configuration))
-      snapshot <- create_material_registration(contribution, configuration.lake, configuration.logicalparent, configuration.id)
+      snapshot <- _local_configuration(core) match {
+        case Some(configuration) => for {
+          _ <- exec_from(_local_subject(core, configuration))
+          contribution <- exec_from(MaterialContribution.parseC(action.contribution))
+          _ <- exec_from(reference_bindings(contribution, configuration))
+          result <- create_material_registration(contribution, configuration.lake, configuration.logicalParent, configuration.id)
+        } yield result
+        case None => for {
+          configuration <- exec_from(_registration_configuration(core))
+          _ <- exec_from(_registration_subject(core, configuration))
+          contribution <- exec_from(MaterialContribution.parseC(action.contribution))
+          _ <- exec_from(MaterialRegistrationSource._admit(contribution, configuration))
+          result <- create_material_registration(contribution, configuration.lake, configuration.logicalparent, configuration.id)
+        } yield result
+      }
     } yield _registration_result(snapshot)
   }
   private final case class GetRegistrationCall(core: ActionCall.Core, override val action: MaterialRegistrationSelectionQuery)
@@ -87,6 +105,16 @@ private[knowledgelake] object MaterialServiceFactory {
       identity <- exec_from(EntityId.parse(query.registrationId))
       loaded <- get_material_registration(identity)
       _ <- exec_from(loaded.entity.document.beginC)
+      snapshot <- _local_configuration(core) match {
+        case Some(configuration) => for {
+          _ <- exec_from(_local_subject(core, configuration))
+          result <- materialize_referenced_registration(identity, configuration)
+        } yield result
+        case None => _materialize_copy(identity, loaded)
+      }
+    } yield _registration_result(snapshot)
+
+    private def _materialize_copy(identity: EntityId, loaded: EntitySnapshot[MaterialRegistrationRecord]): ExecUowM[EntitySnapshot[MaterialRegistrationRecord]] = for {
       configuration <- exec_from(_registration_configuration(core))
       _ <- exec_from(_registration_subject(core, configuration))
       document = loaded.entity.document
@@ -101,7 +129,7 @@ private[knowledgelake] object MaterialServiceFactory {
         FileStoreRef(store.name, configuration.destinationparentkey)))
       source = MaterialRegistrationSource._create(configuration, store, originals)
       snapshot <- materialize_material_registration(identity, writer, source)
-    } yield _registration_result(snapshot)
+    } yield snapshot
   }
 
   private def _mode(core: ActionCall.Core): Consequence[MaterialReferenceRuntime.Mode] =
@@ -170,6 +198,23 @@ private[knowledgelake] object MaterialServiceFactory {
       "resources" -> document.contribution.originals.map(original => Record.data("resourceId" -> original.resourceId,
         "role" -> original.role, "mediaType" -> original.mediaType, "byteLength" -> original.byteLength)),
       "provenance" -> Vector(Record.data("kind" -> "registration", "reference" -> record.id.value)))
+  }
+
+  private def _local_evidence(materialref: String, resourceid: String, reference: MaterialReferencedOriginal,
+    observed: FileObservedReadResult): Record = {
+    val comparison = MaterialContentIntegrity.compare(Some(reference.baseline), observed.bytes) match {
+      case MaterialContentIntegrity.Comparison.Matched => "matched"
+      case MaterialContentIntegrity.Comparison.Changed => "changed"
+      case MaterialContentIntegrity.Comparison.Unverified => "unverified"
+      case MaterialContentIntegrity.Comparison.Unavailable => "unavailable"
+    }
+    val stability = observed.stability match {
+      case FileSourceStability.Changed => "changed"
+      case FileSourceStability.Unknown => "unknown"
+    }
+    Record.data("materialRef" -> materialref, "resourceId" -> resourceid,
+      "contentState" -> comparison, "sourceIdentity" -> "unknown", "readStability" -> stability,
+      "limitation" -> "Content equality does not establish source identity, stable reading, approval, or prior evidence readiness")
   }
 
   private def _selected_resources(ids: Vector[String], resources: Vector[MaterialResourceBinding]):
@@ -253,12 +298,15 @@ private[knowledgelake] object MaterialServiceFactory {
           record <- get_registered_material(query.materialRef)
           _ <- exec_from(if (ids.forall(id => record.document.contribution.originals.exists(_.resourceId == id))) Consequence.unit
             else Consequence.resourceNotFound("Material resource was not found"))
-          resources <- exec_from(ids.foldLeft[Consequence[Vector[(MaterialResourceBinding, String)]]](
+          metadata <- if (record.document.references.isDefined) _local_metadata(record, ids)
+          else for {
+            resources <- exec_from(ids.foldLeft[Consequence[Vector[(MaterialResourceBinding, String)]]](
               Consequence.success(Vector.empty)) { (previous, id) => for {
-            selected <- previous
-            resource <- _registered_resource(core, record, id)
-          } yield selected :+ resource })
-          metadata <- _observed_metadata(core, query.materialRef, _registered_metadata(record), resources)
+              selected <- previous
+              resource <- _registered_resource(core, record, id)
+            } yield selected :+ resource })
+            value <- _observed_metadata(core, query.materialRef, _registered_metadata(record), resources)
+          } yield value
         } yield metadata
         case MaterialReferenceRuntime.Mode.Packages => for {
           snapshot <- _package_get(core, query.materialRef)
@@ -268,6 +316,15 @@ private[knowledgelake] object MaterialServiceFactory {
         } yield metadata
       }
     } yield OperationResponse.RecordResponse(result)
+
+    private def _local_metadata(record: MaterialRegistrationRecord, ids: Vector[String]): ExecUowM[Record] = for {
+      configuration <- exec_from(_local_configuration(core).fold[Consequence[MaterialReferenceStorage]](
+        Consequence.serviceUnavailable("Material source binding is unavailable"))(Consequence.success))
+      observations <- ids.foldLeft(exec_from(Consequence.success(Vector.empty[Record]))) { (previous, id) => for {
+        accumulated <- previous
+        observed <- observe_referenced_original(record.document, id, configuration)
+      } yield accumulated :+ _local_evidence(record.document.location.urn, id, observed._1, observed._2) }
+    } yield _registered_metadata(record) ++ Record.data("observedEvidence" -> observations)
   }
   private final case class ReadCall(core: ActionCall.Core, override val action: OriginalSelectionQuery)
       extends ReadOriginalActionCall with MaterialRegistrationSupport {
@@ -293,9 +350,30 @@ private[knowledgelake] object MaterialServiceFactory {
 
     private def _read_registered(query: dto.OriginalSelectionQuery): ExecUowM[OperationResponse] = for {
       record <- get_registered_material(query.materialRef)
-      selected <- exec_from(_registered_resource(core, record, query.resourceId))
-      result <- _read_resource(selected._1, selected._2)
+      result <- if (record.document.references.isDefined) _read_local(record, query.resourceId)
+        else for {
+          selected <- exec_from(_registered_resource(core, record, query.resourceId))
+          value <- _read_resource(selected._1, selected._2)
+        } yield value
     } yield result
+
+    private def _read_local(record: MaterialRegistrationRecord, resourceid: String): ExecUowM[OperationResponse] = for {
+      configuration <- exec_from(_local_configuration(core).fold[Consequence[MaterialReferenceStorage]](
+        Consequence.serviceUnavailable("Material source binding is unavailable"))(Consequence.success))
+      original <- exec_from(record.document.contribution.originals.find(_.resourceId == resourceid)
+        .fold[Consequence[MaterialOriginalContribution]](Consequence.resourceNotFound("Material resource was not found"))(Consequence.success))
+      observed <- observe_referenced_original(record.document, resourceid, configuration)
+      bytes <- exec_from(observed._2.bytes.fold[Consequence[Vector[Byte]]](
+        Consequence.resourceNotFound("Material original is unavailable"))(Consequence.success))
+      _ <- exec_from(if (MaterialContentIntegrity.compare(Some(observed._1.baseline), Some(bytes)) ==
+        MaterialContentIntegrity.Comparison.Matched && observed._2.stability != FileSourceStability.Changed) Consequence.unit
+        else Consequence.operationConflict("readOriginal", Vector(org.goldenport.observation.Descriptor.Facet.Reason("original-changed"))))
+      binary = BinaryBag.Instance(Bag.Instance(BagBackend.InMemory(bytes.toArray)))
+    } yield OperationResponse.Http(HttpResponse.Binary(HttpStatus.Ok, ContentType(MimeType(original.mediaType), None), binary,
+      Record.data("Cache-Control" -> "private, no-store", "X-Content-Type-Options" -> "nosniff",
+        "Content-Security-Policy" -> "default-src 'none'; sandbox", "Content-Disposition" -> "attachment; filename=\"original\"",
+        "X-Material-Content-State" -> "matched", "X-Material-Source-Identity" -> "unknown",
+        "X-Material-Read-Stability" -> "unknown")))
 
     private def _read_package(query: dto.OriginalSelectionQuery): ExecUowM[OperationResponse] = for {
       _ <- exec_from(if (query.resourceId.matches("[A-Za-z0-9][A-Za-z0-9_-]{0,127}")) Consequence.unit

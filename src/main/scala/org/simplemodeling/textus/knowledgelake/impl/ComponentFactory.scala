@@ -5,7 +5,7 @@ import org.goldenport.cncf.config.ComponentParameterKey
 import org.goldenport.cncf.filestore.GoogleDriveConnectionRuntime
 import org.goldenport.cncf.oauth.OAuthConnectionRuntime
 import org.simplemodeling.textus.knowledgelake.KnowledgeLakeComponent
-import org.simplemodeling.textus.knowledgelake.material.{MaterialDeliveryConfiguration, MaterialDeliveryLegacyRecovery, MaterialDeliveryRuntime, MaterialReferenceRuntime, MaterialRegistrationConfiguration, MaterialRegistrationRuntime, MaterialParticipantConfiguration, MaterialParticipantRuntime}
+import org.simplemodeling.textus.knowledgelake.material.{MaterialDeliveryConfiguration, MaterialDeliveryLegacyRecovery, MaterialDeliveryRuntime, MaterialReferenceRuntime, MaterialReferenceStorage, MaterialRegistrationConfiguration, MaterialRegistrationRuntime, MaterialParticipantConfiguration, MaterialParticipantRuntime}
 
 /*
  * @since   Oct. 21, 2026
@@ -23,6 +23,7 @@ abstract class KnowledgeLakeParticipantFactoryBase extends KnowledgeLakeComponen
       GoogleDriveConnectionRuntime.configurationKey,
       MaterialReferenceRuntime.modeKey, MaterialReferenceRuntime.catalogKey, MaterialReferenceRuntime.registeredBindingsKey,
       MaterialReferenceRuntime.packagesKey,
+      MaterialReferenceStorage.configurationKey,
       MaterialRegistrationConfiguration.configurationKey, MaterialDeliveryConfiguration.configurationKey, MaterialParticipantConfiguration.configurationKey,
       MaterialDeliveryLegacyRecovery.configurationKey)
 

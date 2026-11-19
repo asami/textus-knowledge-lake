@@ -11,13 +11,17 @@ import org.goldenport.cncf.entity.runtime.*
  *
  * @since   Oct. 21, 2026
  *  version Oct. 25, 2026
- * @version Nov.  6, 2026
+ *  version Nov.  6, 2026
+ * @version Nov. 12, 2026
  */
 private[knowledgelake] trait MaterialRegistrationRuntime extends Component {
   self: MaterialReferenceRuntime =>
   private var _registration_configuration: Option[MaterialRegistrationConfiguration] = None
+  private var _local_reference_configuration: Option[MaterialReferenceStorage] = None
   private[knowledgelake] final def _material_registration_configuration: Option[MaterialRegistrationConfiguration] =
     _registration_configuration
+  private[knowledgelake] final def _material_local_reference_configuration: Option[MaterialReferenceStorage] =
+    _local_reference_configuration
 
   override protected def initialize_component_c(params: ComponentInit): Consequence[Unit] = for {
     _ <- super.initialize_component_c(params)
@@ -32,6 +36,13 @@ private[knowledgelake] trait MaterialRegistrationRuntime extends Component {
           Consequence.configurationInvalid("Package Material reference mode cannot include registration configuration")
       }
     }
+    localresolution <- initializationParameters.resolve(MaterialReferenceStorage.configurationKey)
+    local <- localresolution.value match {
+      case None => Consequence.success(Option.empty[MaterialReferenceStorage])
+      case Some(text) if _material_reference_mode == MaterialReferenceRuntime.Mode.Registered && configuration.isEmpty =>
+        MaterialReferenceStorage.parseC(text).map(Some(_))
+      case Some(_) => Consequence.configurationInvalid("Local Material reference configuration requires registered mode and no copy registration configuration")
+    }
     _ <- Consequence {
       val persistent = MaterialRegistrationEntity.persistent
       val realm = new EntityRealm[MaterialRegistrationRecord](MaterialRegistrationEntity.ownerName,
@@ -44,7 +55,7 @@ private[knowledgelake] trait MaterialRegistrationRuntime extends Component {
       entitySpace.registerEntity(MaterialRegistrationEntity.ownerName, collection)
       ()
     }
-  } yield { _registration_configuration = configuration }
+  } yield { _registration_configuration = configuration; _local_reference_configuration = local }
 }
 
 /** Native realm state only, never a second registration database. */

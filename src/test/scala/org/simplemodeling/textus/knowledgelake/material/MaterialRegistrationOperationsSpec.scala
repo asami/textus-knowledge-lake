@@ -28,13 +28,311 @@ import org.simplemodeling.textus.knowledgelake.{value => dto}
  * Synthetic provider evidence is distinct from actual Google/App acceptance.
  *
  * @since   Oct. 22, 2026
- * @version Oct. 22, 2026
+ *  version Oct. 22, 2026
+ * @version Nov. 12, 2026
  */
 @org.scalatest.tags.Slow
 final class MaterialRegistrationOperationsSpec extends AnyWordSpec with Matchers with GivenWhenThen
     with ConclusionMatchers with MaterialRegistrationPostgresqlSpec {
   import MaterialRegistrationPersistenceFixture.*
   import MaterialRegistrationOperationsFixture.*
+
+  "Local referenced-original operations" should {
+    "qualify admitted heritage originals through public reads after reconstruction" in {
+      Given("the explicitly selected read-only heritage fixture and a separate temporary destination")
+      val source = sys.env.get("TEXTUS_KNOWLEDGE_LAKE_HERITAGE_ORIGINALS_ROOT")
+        .map(java.nio.file.Paths.get(_)).getOrElse(cancel("heritage originals fixture is not selected"))
+      val root = Files.createTempDirectory("tkl-reference-heritage-")
+      val destination = Files.createDirectory(root.resolve("destination"))
+      val originals = Vector(
+        ("report", "report-414.pdf", 2678958L, "d9229230a61938f01fb7e3f4b1e77a98c2ad77bf78b6b8852324cecb236141db"),
+        ("catalog", "catalog.pdf", 36931060L, "d59510dc591d6322c1f7d1f520bfbb253cb677b17b0cbbf56dcc9b70702ac98e"))
+      def _hash_(input: java.io.InputStream): String = {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val buffer = new Array[Byte](65536)
+        var count = input.read(buffer)
+        while (count != -1) {
+          digest.update(buffer, 0, count)
+          count = input.read(buffer)
+        }
+        digest.digest().map(value => f"${value & 0xff}%02x").mkString
+      }
+      def _snapshot_(): Vector[(String, java.util.Map[String, Object], String)] = originals.map { case (_, name, _, _) =>
+        val path = source.resolve(name)
+        (name, Files.readAttributes(path, "unix:ino,size,mode,uid,gid,lastModifiedTime,ctime"),
+          Using.resource(Files.newInputStream(path))(_hash_))
+      }
+      def _entries_(): Vector[String] = Using.resource(Files.list(source)) { files =>
+        import scala.jdk.CollectionConverters.*
+        files.iterator().asScala.map(_.getFileName.toString).toVector.sorted
+      }
+      val before = _snapshot_()
+      val entries = _entries_()
+      originals.zip(before).foreach { case ((_, _, size, digest), (_, attributes, hash)) =>
+        attributes.get("size") shouldBe java.lang.Long.valueOf(size)
+        hash shouldBe digest
+      }
+      val configuration = Json.obj("schema" -> Json.fromString("textus.material-local-reference/1"),
+        "id" -> Json.fromString("heritage-local"), "allowedSubjects" -> Json.arr(Json.fromString(principal)),
+        "lake" -> Json.fromString(lake), "logicalParent" -> Json.fromString(logicalParent),
+        "destinationWorkspace" -> Json.fromString("destination"), "maximumBytes" -> Json.fromInt(40000000),
+        "bindings" -> Json.fromValues(originals.map { case (id, name, _, _) =>
+          Json.obj("id" -> Json.fromString(id), "workspace" -> Json.fromString("source"), "path" -> Json.fromString(name))
+        }))
+      val settings = Map(MaterialReferenceRuntime.modeKey.name -> "registered",
+        MaterialReferenceStorage.configurationKey.name -> configuration.noSpaces)
+      def _prepare_(directory: java.nio.file.Path): Map[String, String] = {
+        val owner = org.simplemodeling.textus.knowledgelake.KnowledgeLakeComponent.componentId.name
+        val plan = Json.obj("schema" -> Json.fromString("cncf.runtime-process-execution.v3"),
+          "programs" -> Json.arr(), "grants" -> Json.arr(), "workspaces" -> Json.arr(
+            Json.obj("identity" -> Json.fromString("source"), "root" -> Json.fromString(source.toString)),
+            Json.obj("identity" -> Json.fromString("destination"), "root" -> Json.fromString(destination.toString))),
+          "workspaceGrants" -> Json.arr(
+            Json.obj("componentId" -> Json.fromString(owner), "workspaceId" -> Json.fromString("source"), "access" -> Json.fromString("read-only")),
+            Json.obj("componentId" -> Json.fromString(owner), "workspaceId" -> Json.fromString("destination"), "access" -> Json.fromString("manage"))),
+          "sbtPrograms" -> Json.arr(), "gitPrograms" -> Json.arr())
+        val path = directory.resolve(".textus/config.json")
+        val existing = parser.parse(Files.readString(path, StandardCharsets.UTF_8)).toOption.get
+        Files.writeString(path, existing.mapObject(_.add(
+          org.goldenport.cncf.config.CncfConfigurationParameterCatalog.SUBSYSTEM_PROCESS_EXECUTION_PLAN_KEY,
+          Json.fromString(plan.noSpaces))).noSpaces, StandardCharsets.UTF_8)
+        Map.empty
+      }
+      try withDatabase(native_container) { database =>
+        val selected = withSession(database, settings, prepare = _prepare_) { session =>
+          When("each original is registered and materialized as a separate native Material")
+          originals.map { case (id, name, size, _) =>
+            val contribution = Json.obj("schema" -> Json.fromString("textus.material-contribution/1"),
+              "title" -> Json.fromString(id), "createdAt" -> Json.fromString("2026-11-12"),
+              "classifications" -> Json.arr(), "provenance" -> Json.obj(), "documents" -> Json.arr(),
+              "originals" -> Json.arr(Json.obj("resourceId" -> Json.fromString(id), "role" -> Json.fromString("original"),
+                "mediaType" -> Json.fromString("application/pdf"), "byteLength" -> Json.fromLong(size),
+                "sourceReference" -> Json.obj("schema" -> Json.fromString("textus.material-source-binding/1"),
+                  "bindingId" -> Json.fromString(id), "workspace" -> Json.fromString("source"), "path" -> Json.fromString(name)))))
+            val created = take(dto.MaterialRegistrationResult.createC(_record(session.query("createMaterialRegistration", createFields(contribution)))))
+            val registered = take(dto.MaterialRegistrationResult.createC(_record(session.query("materializeMaterial", selector(created.registrationId)))))
+            registered.state shouldBe "registered"
+            (id, registered.materialRef)
+          }
+        }
+        Given("a reconstructed component with the same native Entity store")
+        withSession(database, settings, prepare = _prepare_) { session =>
+          When("each Material is observed and its original is read through public operations")
+          selected.zip(originals).foreach { case ((id, materialref), (_, _, _, digest)) =>
+            val metadata = _record(session.query("getMaterial", Vector("materialRef" -> materialref, "evidenceResourceIds" -> Vector(id))))
+            val evidence = take(metadata.getAsC[Vector[Record]]("observedEvidence")).get.head
+            evidence.getString("contentState") shouldBe Some("matched")
+            evidence.getString("sourceIdentity") shouldBe Some("unknown")
+            evidence.getString("readStability") shouldBe Some("unknown")
+            val media = _response(session.query("readOriginal", Vector("materialRef" -> materialref, "resourceId" -> id)))
+            Using.resource(media.bag.openInputStream())(_hash_) shouldBe digest
+            media.headerValue("X-Material-Content-State") shouldBe Some("matched")
+            media.headerValue("X-Material-Source-Identity") shouldBe Some("unknown")
+            media.headerValue("X-Material-Read-Stability") shouldBe Some("unknown")
+          }
+          Then("actual bytes match their baselines and observations retain their separate meanings")
+        }
+        Using.resource(Files.list(destination)) { files =>
+          import scala.jdk.CollectionConverters.*
+          val names = files.iterator().asScala.map(_.getFileName.toString).toVector
+          names.size shouldBe 2
+          all (names) should endWith(".json")
+        }
+        _snapshot_() shouldBe before
+        _entries_() shouldBe entries
+      } finally Using.resource(Files.walk(root)) { paths =>
+        import scala.jdk.CollectionConverters.*
+        paths.iterator().asScala.toVector.sortBy(_.getNameCount).reverse.foreach(Files.deleteIfExists)
+      }
+    }
+
+    "reject overlapping workspace roots before writing reference metadata" in {
+      Given("synthetic source files and same, nested, or symlink-aliased destination roots")
+      Vector("same", "nested", "alias").foreach { shape =>
+        val root = Files.createTempDirectory("tkl-reference-overlap-")
+        val source = Files.createDirectory(root.resolve("source"))
+        val original = source.resolve("report.pdf")
+        Files.write(original, Array[Byte](1, 2, 3))
+        val destination = shape match {
+          case "same" => source
+          case "nested" => Files.createDirectory(source.resolve("destination"))
+          case _ => Files.createSymbolicLink(root.resolve("alias"), source)
+        }
+        val before = Files.readAttributes(original, "unix:ino,size,mode,uid,gid,lastModifiedTime,ctime")
+        val entries = Using.resource(Files.list(source))(_.map(_.getFileName.toString).sorted().toArray.toVector)
+        val configuration = Json.obj("schema" -> Json.fromString("textus.material-local-reference/1"),
+          "id" -> Json.fromString("local"), "allowedSubjects" -> Json.arr(Json.fromString(principal)),
+          "lake" -> Json.fromString(lake), "logicalParent" -> Json.fromString(logicalParent),
+          "destinationWorkspace" -> Json.fromString("destination"), "maximumBytes" -> Json.fromInt(100),
+          "bindings" -> Json.arr(Json.obj("id" -> Json.fromString("report"), "workspace" -> Json.fromString("source"),
+            "path" -> Json.fromString("report.pdf"))))
+        val contribution = Json.obj("schema" -> Json.fromString("textus.material-contribution/1"),
+          "title" -> Json.fromString("Report"), "createdAt" -> Json.fromString("2026-11-12"),
+          "classifications" -> Json.arr(), "provenance" -> Json.obj(), "documents" -> Json.arr(),
+          "originals" -> Json.arr(Json.obj("resourceId" -> Json.fromString("report"), "role" -> Json.fromString("original"),
+            "mediaType" -> Json.fromString("application/pdf"), "byteLength" -> Json.fromInt(3),
+            "sourceReference" -> Json.obj("schema" -> Json.fromString("textus.material-source-binding/1"),
+              "bindingId" -> Json.fromString("report"), "workspace" -> Json.fromString("source"),
+              "path" -> Json.fromString("report.pdf")))))
+        val settings = Map(MaterialReferenceRuntime.modeKey.name -> "registered",
+          MaterialReferenceStorage.configurationKey.name -> configuration.noSpaces)
+        def _prepare_(directory: java.nio.file.Path): Map[String, String] = {
+          val owner = org.simplemodeling.textus.knowledgelake.KnowledgeLakeComponent.componentId.name
+          val plan = Json.obj("schema" -> Json.fromString("cncf.runtime-process-execution.v3"),
+            "programs" -> Json.arr(), "grants" -> Json.arr(),
+            "workspaces" -> Json.arr(
+              Json.obj("identity" -> Json.fromString("source"), "root" -> Json.fromString(source.toString)),
+              Json.obj("identity" -> Json.fromString("destination"), "root" -> Json.fromString(destination.toString))),
+            "workspaceGrants" -> Json.arr(
+              Json.obj("componentId" -> Json.fromString(owner), "workspaceId" -> Json.fromString("source"), "access" -> Json.fromString("read-only")),
+              Json.obj("componentId" -> Json.fromString(owner), "workspaceId" -> Json.fromString("destination"), "access" -> Json.fromString("manage"))),
+            "sbtPrograms" -> Json.arr(), "gitPrograms" -> Json.arr())
+          val path = directory.resolve(".textus/config.json")
+          val existing = parser.parse(Files.readString(path, StandardCharsets.UTF_8)).toOption.get
+          Files.writeString(path, existing.mapObject(_.add(
+            org.goldenport.cncf.config.CncfConfigurationParameterCatalog.SUBSYSTEM_PROCESS_EXECUTION_PLAN_KEY,
+            Json.fromString(plan.noSpaces))).noSpaces, StandardCharsets.UTF_8)
+          Map.empty
+        }
+        try withDatabase(native_container) { database =>
+          withSession(database, settings, prepare = _prepare_) { session =>
+            When("a public Material registration is materialized against the overlapping roots")
+            val created = take(dto.MaterialRegistrationResult.createC(_record(session.query("createMaterialRegistration", createFields(contribution)))))
+            val result = session.query("materializeMaterial", selector(created.registrationId))
+            Then("materialization fails before any destination write and leaves source content and metadata unchanged")
+            result.isSuccess shouldBe false
+            Files.readAllBytes(original).toVector shouldBe Vector[Byte](1, 2, 3)
+            Files.readAttributes(original, "unix:ino,size,mode,uid,gid,lastModifiedTime,ctime") shouldBe before
+            Using.resource(Files.list(source))(_.map(_.getFileName.toString).sorted().toArray.toVector) shouldBe entries
+            if (shape == "nested") Using.resource(Files.list(destination))(_.count()) shouldBe 0L
+          }
+        } finally Using.resource(Files.walk(root)) { paths =>
+          import scala.jdk.CollectionConverters.*
+          paths.iterator().asScala.toVector.sortBy(_.getNameCount).reverse.foreach(Files.deleteIfExists)
+        }
+      }
+    }
+
+    "retain actual-byte baselines and reopen without writing source originals" in {
+      Given("separate admitted workspaces and a native owner")
+      val root = Files.createTempDirectory("tkl-reference-spec-")
+      val source = Files.createDirectory(root.resolve("source"))
+      val destination = Files.createDirectory(root.resolve("destination"))
+      val original = source.resolve("report.pdf")
+      val bytes = Vector[Byte](1, 2, 3)
+      Files.write(original, bytes.toArray)
+      val modified = Files.getLastModifiedTime(original)
+      val localconfig = Json.obj("schema" -> Json.fromString("textus.material-local-reference/1"),
+        "id" -> Json.fromString("local"), "allowedSubjects" -> Json.arr(Json.fromString(principal)),
+        "lake" -> Json.fromString(lake), "logicalParent" -> Json.fromString(logicalParent),
+        "destinationWorkspace" -> Json.fromString("destination"), "maximumBytes" -> Json.fromInt(40000000),
+        "bindings" -> Json.arr(Json.obj("id" -> Json.fromString("report"), "workspace" -> Json.fromString("source"),
+          "path" -> Json.fromString("report.pdf"))))
+      val localcontribution = Json.obj("schema" -> Json.fromString("textus.material-contribution/1"),
+        "title" -> Json.fromString("Report"), "createdAt" -> Json.fromString("2026-11-12"),
+        "classifications" -> Json.arr(), "provenance" -> Json.obj(), "documents" -> Json.arr(),
+        "originals" -> Json.arr(Json.obj("resourceId" -> Json.fromString("report"), "role" -> Json.fromString("original"),
+          "mediaType" -> Json.fromString("application/pdf"), "byteLength" -> Json.fromInt(3),
+          "sourceReference" -> Json.obj("schema" -> Json.fromString("textus.material-source-binding/1"),
+            "bindingId" -> Json.fromString("report"), "workspace" -> Json.fromString("source"),
+            "path" -> Json.fromString("report.pdf")))))
+      val settings = Map(MaterialReferenceRuntime.modeKey.name -> "registered",
+        MaterialReferenceStorage.configurationKey.name -> localconfig.noSpaces)
+      var sourcegrant = true
+      def _prepare_(directory: java.nio.file.Path): Map[String, String] = {
+        val owner = org.simplemodeling.textus.knowledgelake.KnowledgeLakeComponent.componentId.name
+        val plan = Json.obj(
+          "schema" -> Json.fromString("cncf.runtime-process-execution.v3"),
+          "programs" -> Json.arr(), "grants" -> Json.arr(),
+          "workspaces" -> Json.arr(
+            Json.obj("identity" -> Json.fromString("source"), "root" -> Json.fromString(source.toString)),
+            Json.obj("identity" -> Json.fromString("destination"), "root" -> Json.fromString(destination.toString))),
+          "workspaceGrants" -> Json.fromValues(
+            (if (sourcegrant) Vector(Json.obj("componentId" -> Json.fromString(owner), "workspaceId" -> Json.fromString("source"),
+              "access" -> Json.fromString("read-only"))) else Vector.empty) :+
+            Json.obj("componentId" -> Json.fromString(owner), "workspaceId" -> Json.fromString("destination"),
+              "access" -> Json.fromString("manage"))),
+          "sbtPrograms" -> Json.arr(), "gitPrograms" -> Json.arr())
+        val path = directory.resolve(".textus/config.json")
+        val existing = parser.parse(Files.readString(path, StandardCharsets.UTF_8)).toOption.get
+        val updated = existing.mapObject(_.add(org.goldenport.cncf.config.CncfConfigurationParameterCatalog.SUBSYSTEM_PROCESS_EXECUTION_PLAN_KEY,
+          Json.fromString(plan.noSpaces)))
+        Files.writeString(path, updated.noSpaces, StandardCharsets.UTF_8)
+        Map.empty
+      }
+      try withDatabase(native_container) { database =>
+        val selected = withSession(database, settings, prepare = _prepare_) { session =>
+          When("the public registration and materialization operations run")
+          val created = take(dto.MaterialRegistrationResult.createC(_record(session.query("createMaterialRegistration",
+            createFields(localcontribution)))))
+          val result = take(dto.MaterialRegistrationResult.createC(_record(session.query("materializeMaterial", selector(created.registrationId)))))
+          Then("native registration completes and only JSON metadata is written outside the unchanged source")
+          result.state shouldBe "registered"
+          Files.readAllBytes(original).toVector shouldBe bytes
+          Files.getLastModifiedTime(original) shouldBe modified
+          Using.resource(Files.list(source)) { files =>
+            files.toArray.toVector.map(_.asInstanceOf[java.nio.file.Path].getFileName.toString) shouldBe Vector("report.pdf")
+          }
+          Using.resource(Files.list(destination)) { files =>
+            val names = files.toArray.toVector.map(_.asInstanceOf[java.nio.file.Path].getFileName.toString)
+            names.size shouldBe 1
+            names.head should endWith(".json")
+          }
+          result
+        }
+        Given("the authorized caller after its source workspace grant is removed")
+        sourcegrant = false
+        withSession(database, settings, prepare = _prepare_) { session =>
+          When("the caller asks for the registered original")
+          val denied = session.query("getMaterial", Vector("materialRef" -> selected.materialRef,
+            "evidenceResourceIds" -> Vector("report")))
+          Then("the source access is refused instead of reporting unavailable or matched content")
+          denied.isSuccess shouldBe false
+          _expect_conclusion(failure(denied), failure(Consequence.argumentPolicyViolation[Unit](
+            "workspaceId", "workspace.execution.component-grant", "component workspace permission", "unapproved")),
+            "WorkspaceExecution.scala")
+          failure(denied).toString should not include source.toString
+        }
+        sourcegrant = true
+        Given("the same registered source with an insufficient read budget")
+        val limited = settings.updated(MaterialReferenceStorage.configurationKey.name,
+          localconfig.mapObject(_.add("maximumBytes", Json.fromInt(2))).noSpaces)
+        withSession(database, limited, prepare = _prepare_) { session =>
+          When("the authorized caller requests content evidence")
+          val incomplete = session.query("getMaterial", Vector("materialRef" -> selected.materialRef,
+            "evidenceResourceIds" -> Vector("report")))
+          Then("the bounded read fails without claiming a content match")
+          incomplete.isSuccess shouldBe false
+          failure(incomplete).observation.taxonomy shouldBe failure(Consequence.resourceInvalid[Unit]("limit")).observation.taxonomy
+        }
+        Given("a reconstructed component and the same native database and workspaces")
+        withSession(database, settings, prepare = _prepare_) { session =>
+          When("the same-sized original is changed and the selected evidence is requested")
+          Files.write(original, Array[Byte](1, 2, 4))
+          val metadata = _record(session.query("getMaterial", Vector("materialRef" -> selected.materialRef,
+            "evidenceResourceIds" -> Vector("report"))))
+          val evidence = take(metadata.getAsC[Vector[Record]]("observedEvidence")).get.head
+          Then("the new bytes are reported changed and the retained baseline is not replaced")
+          evidence.getString("contentState") shouldBe Some("changed")
+          evidence.getString("sourceIdentity") shouldBe Some("unknown")
+          session.query("readOriginal", Vector("materialRef" -> selected.materialRef, "resourceId" -> "report")).isSuccess shouldBe false
+          Files.write(original, bytes.toArray)
+          val restored = _record(session.query("getMaterial", Vector("materialRef" -> selected.materialRef,
+            "evidenceResourceIds" -> Vector("report"))))
+          take(restored.getAsC[Vector[Record]]("observedEvidence")).get.head.getString("contentState") shouldBe Some("matched")
+          session.query("getMaterial", Vector("materialRef" -> selected.materialRef,
+            "evidenceResourceIds" -> Vector("report")), session = Some("foreign-session")).isSuccess shouldBe false
+          Files.delete(original)
+          val missing = _record(session.query("getMaterial", Vector("materialRef" -> selected.materialRef,
+            "evidenceResourceIds" -> Vector("report"))))
+          take(missing.getAsC[Vector[Record]]("observedEvidence")).get.head.getString("contentState") shouldBe Some("unavailable")
+        }
+      } finally Using.resource(Files.walk(root)) { paths =>
+        import scala.jdk.CollectionConverters.*
+        paths.iterator().asScala.toVector.sortBy(_.getNameCount).reverse.foreach(Files.deleteIfExists)
+      }
+    }
+  }
 
   "Public Material registration" should {
     "preserve native identity complete input and acknowledged lifecycle" which {

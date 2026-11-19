@@ -171,6 +171,13 @@ original bytes with the admitted media type and private/no-store, nosniff,
 sandbox and attachment headers. This read never initiates preparation or
 registration and never substitutes another resource on failure.
 
+For local referenced originals, this operation reads the exact configured
+workspace binding and checks the returned bytes against the retained SHA-256
+baseline. A missing original and a changed original fail distinctly. Matching
+responses expose content match, source identity unknown, and read stability
+unknown in X-Material-* headers; matching content does not certify identity,
+stability, approval, or the readiness of earlier derived evidence.
+
 ##### INPUT
 
 ###### VALUE
@@ -238,6 +245,11 @@ argument-invalid. Native authorization/storage/uncertainty Conclusions propagate
 An unacknowledged create is unresolved: never automatically retry or deduplicate
 by an App/business key. No provider read/write occurs. Result JSON projects
 registration_id/material_ref and exposes no private contribution or provider data.
+
+With `material.reference.local.configuration`, each original instead supplies
+the `textus.material-source-binding/1` sourceReference containing the exact
+bindingId, workspace and path admitted by the host. These logical selectors
+are not grants. The host source binding and registration subject must match.
 
 ##### INPUT
 
@@ -352,6 +364,14 @@ may retain Materializing and remote bytes, or an uncertain final acknowledgement
 may leave Registered. Inspect getMaterialRegistration for actual saved status;
 never automatically replay, reset or delete output. Result JSON projects
 registration_id/material_ref and contains no physical maps, credentials or grants.
+
+For a local reference configuration, acquire each original once using the
+selected finite read budget, derive the SHA-256 baseline from the returned
+complete bytes, and check source/destination root separation before writing a
+single JSON metadata file. Original bytes are not written to the destination.
+Store the baseline and exact binding in the native registration; source identity
+and read stability remain separate from content equality. The separation check
+is point-in-time, and subsequent file operations still check their own bindings.
 
 ##### INPUT
 
