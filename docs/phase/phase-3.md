@@ -6,7 +6,7 @@ owner=textus-knowledge-lake
 checklist=inline TKL3-01..05 below
 
 ## Goal
-Provide authorized, versioned source access and durable derived-artifact integration for [SIE contextual retrieval](https://github.com/asami/semantic-integration-engine/blob/HEAD/docs/phase/contextual-retrieval-plan.md). Preserve Phase 1/2 scope and priorities. This plan does not accept implementation.
+Provide authorized, versioned source access and durable derived-artifact integration for [SIE contextual retrieval](https://github.com/asami/semantic-integration-engine/blob/HEAD/docs/phase/phase-1.md). Preserve Phase 1/2 scope and priorities. This plan does not accept implementation.
 
 
 ## Acceptance
