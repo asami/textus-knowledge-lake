@@ -1,6 +1,6 @@
 # Contextual Retrieval Integration Notes
 
-Exploratory, non-normative. See [Phase 3](../phase/phase-3.md) and [SIE plan](https://github.com/asami/semantic-integration-engine/blob/HEAD/docs/phase/contextual-retrieval-plan.md).
+Exploratory, non-normative. See [Phase 3](../phase/phase-3.md) and [SIE plan](https://github.com/asami/semantic-integration-engine/blob/HEAD/docs/phase/phase-1.md).
 
 TKL supplies authorized source identity, version, original content and available relationship/provenance references. SIE or its delegated retrieval backend owns chunking, contextualization, lexical/vector ranking and context assembly. TKL should manage durable derived-artifact references and lifecycle; physical vector/RDF store placement remains a contract decision, not a requirement to duplicate SIE stores.
 
