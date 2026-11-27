@@ -1,5 +1,19 @@
 # Textus Knowledge Lake (TKL)
 
+## Phase 1公開対象の再整理 — 2026-11-13
+
+12月11日のCommonsは、2026年の対象メールから運営側で抽出/確認した知識を、チーム限定Webで参照する版。
+利用者向け更新/承認、全更新系S1の新規開発、両source新規統合を公開前提にしない。
+実設定はprivate properties、実データ/個人情報/機微情報はGit外で扱う。
+[担当の最新計画](docs/phase/commons-demo-delivery-plan.md)を従来の更新デモ向け区分より優先する。
+既存Phase/checklistの完了/実行状態は変更しない。
+
+## Commons D1向けの予定区分 — 2026-11-13
+
+[デモ前/デモ後計画](docs/phase/commons-demo-delivery-plan.md)では、議論一件の原本/Material/発言参照を
+既存経路で確認する作業を先行する。Commons向けの多媒体収集/EAI全面移行/OpenClaw拡張はD1依存にしない。
+既存の受入履歴と独立作業は維持し、Studio追加開発を前提にしない。
+
 ## Current direction — 2026-10-21
 
 TKL provides the logical Knowledge Lake interface: ordinary Material access and
