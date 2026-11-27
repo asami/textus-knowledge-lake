@@ -68,3 +68,8 @@ This preserves the ability to start with exploratory AI processing and progressi
 TKL should initially prove one narrow end-to-end path from Google Workspace through TEAI and TKL into KnowledgeHub/BoK.
 
 The project should then expand by knowledge use case rather than by trying to support every Google Workspace API at once.
+
+## Executable Knowledge alignment (2026-11-16)
+
+Curated knowledge can, where justified, be formalized as **Executable Knowledge** (models, rules, workflows, programs). This is one possible use of explicit knowledge, not a requirement for all Material or BoK content. Interpret its creation using SECI Externalization and Combination. Preserve provenance, review/admission, and the Material/Knowledge boundary. Canonical concept and draft contract: [SimpleModeling Executable Knowledge](https://github.com/asami/simplemodelingorg/blob/main/docs/notes/executable-knowledge.md).
+
